@@ -39,11 +39,17 @@ no URL to POST to. It ingests outside items two ways:
    unlinked event whose categories include "Torgy" and that has a subject
    and start time, as an undated task with scheduledAt = event start.
    Outlook is a *schedule* in TruCalenZer, not a due-date source, so this
-   route yields a work block on the date, not a due date. Auth is the
-   user's own Microsoft Graph token (Calendars.ReadWrite) for the same
-   account TruCalenZer is connected to: TRUCALENZER_GRAPH_TOKEN.
-   The event body must not carry "Torgy-Task-ID:" marker lines; those are
-   TruCalenZer's own links and are never forged here.
+   route yields a work block on the date, not a due date. Auth is a
+   Microsoft Graph token (Calendars.ReadWrite) for the same account
+   TruCalenZer is connected to, supplied to Bee Stinger directly via
+   TRUCALENZER_GRAPH_TOKEN. TruCalenZer's own DPAPI-protected token
+   cache is never read.
+   The event body carries "Torgy-Task-ID: <uuid>" and
+   "Torgy-Task-Version: 1" marker lines (INVESTIGATION B1, adapter rule
+   1), derived deterministically from the commitment: TruCalenZer's
+   importer reads the markers from the event body and links the event to
+   that task id instead of creating a duplicate on re-import. The Graph
+   transactionId gives the same protection against a retried POST.
 """
 
 from __future__ import annotations
@@ -208,9 +214,20 @@ class TruCalenZerOutlookAdapter:
         self.minutes = minutes
         self.conversation_id = conversation_id
 
+    def _task_id(self, item: dict) -> str:
+        """Deterministic TruCalenZer task id for one commitment (B1 rule 1).
+
+        UUIDv5 over the same commitment key as the Graph transactionId, in
+        its own derivation domain, so re-imports link instead of duplicate.
+        """
+        return str(uuid.uuid5(_ID_NAMESPACE, commitment_key(item, self.conversation_id) + ":torgy-task"))
+
     def payload(self, item: dict) -> dict:
+        # B1: a commitment arrives as a work block; blocks under 5 minutes
+        # fall back to 30 instead of creating a sliver event.
+        minutes = self.minutes if self.minutes >= 5 else 30
         start = _local_to_utc_iso(item["date"], self.start_time, self.tz)
-        end_dt = datetime.strptime(start, "%Y-%m-%dT%H:%M:%SZ") + timedelta(minutes=self.minutes)
+        end_dt = datetime.strptime(start, "%Y-%m-%dT%H:%M:%SZ") + timedelta(minutes=minutes)
         return {
             "subject": item["title"],
             "categories": [TRUCALENZER_CATEGORY],
@@ -218,8 +235,12 @@ class TruCalenZerOutlookAdapter:
             "end": {"dateTime": end_dt.strftime("%Y-%m-%dT%H:%M:%S"), "timeZone": "UTC"},
             "body": {
                 "contentType": "text",
+                # Markers go on their own lines: TruCalenZer's parser needs a
+                # "\n" before each "Name:" line (INVESTIGATION B1).
                 "content": f"From a Bee lecture capture ({item['kind']}, date heard in class, "
-                           f"not officially confirmed). \"{item['quote']}\"",
+                           f"not officially confirmed). \"{item['quote']}\"\n\n"
+                           f"Torgy-Task-ID: {self._task_id(item)}\n"
+                           f"Torgy-Task-Version: 1",
             },
             # Graph de-duplicates event creation on transactionId, so a re-run
             # of the same lecture does not create a second event.
@@ -236,7 +257,7 @@ class TruCalenZerOutlookAdapter:
         req = urllib.request.Request(GRAPH_EVENTS_URL, data=json.dumps(payload).encode(), method="POST")
         req.add_header("Authorization", f"Bearer {self.token}")
         req.add_header("Content-Type", "application/json")
-        req.add_header("Prefer", 'outlook.timezone="UTC"')
+        req.add_header("Prefer", 'outlook.timezone="UTC", IdType="ImmutableId"')
         req.add_header("User-Agent", USER_AGENT)
         try:
             with urllib.request.urlopen(req, timeout=30) as resp:
