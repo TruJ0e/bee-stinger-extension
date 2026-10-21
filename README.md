@@ -33,7 +33,9 @@ python3 -m bee_stinger.cli fetch --conversation <id>
 Set `LLM_API_KEY` (any OpenAI-compatible endpoint) to use the LLM
 extraction path; without it, a deterministic offline extractor runs
 instead. Delivery adapters are dry-run by default and print exactly what
-they would send; `--live` enables real sends.
+they would send; `--live` enables real sends. TruCalenZer delivery is a
+local import file (`output/trucalenzer-import.json`) plus, with `--live`,
+an Outlook-category route — see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 Design and boundaries: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) ·
 Build plan: [docs/ENTRY-PLAN.md](docs/ENTRY-PLAN.md) ·
@@ -51,7 +53,7 @@ Built during the **Amazon "Build, Ship, Shape" Developer Hackathon** (Bee track)
 | Transcript assembler | One Bee conversation → clean, ordered lecture transcript |
 | Concept extractor | Transcript → TRSS-schema concept cards (LLM endpoint via env var, OpenAI-compatible) |
 | Guide renderer | Cards → study guide page + flashcards + 3-level quiz, following the TRSS study-unit pattern |
-| Commitment adapters | Dated commitments → Bee to-dos, `.ics` calendar export, TruCalenZer route |
+| Commitment adapters | Dated commitments → Bee to-dos, `.ics` calendar export, TruCalenZer import file / Outlook route |
 
 Secrets are environment variables only (`BEE_TOKEN`, LLM key) — nothing is committed.
 

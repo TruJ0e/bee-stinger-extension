@@ -30,6 +30,9 @@ footer { max-width: 860px; margin: 0 auto; padding: 0 24px 32px; font-size: 13px
 """
 
 
+_COMMIT_LABEL = {"due": "due", "exam": "on", "reading": "before"}
+
+
 def _esc(s) -> str:
     return html.escape(str(s))
 
@@ -87,7 +90,8 @@ def render_guide(title: str, cards: list[dict], quiz: list[dict], commitments: l
         out.append("<h2>Commitments From This Lecture</h2>")
         for item in commitments:
             out.append(
-                f"<div class='commit'><strong>{_esc(item['title'])}</strong> — due {_esc(item['date'])}"
+                f"<div class='commit'><strong>{_esc(item['title'])}</strong> — "
+                f"{_esc(_COMMIT_LABEL.get(item.get('kind'), 'on'))} {_esc(item['date'])}"
                 f"<br><em>\"{_esc(item['quote'])}\"</em></div>"
             )
 

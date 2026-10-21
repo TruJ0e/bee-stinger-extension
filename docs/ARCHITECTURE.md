@@ -34,9 +34,9 @@ TRSS-schema cards      Commitment items {title, date, kind, quote}
         |                    |
         v                    v
 Guide renderer         Adapters (adapters.py, dry-run by default)
-(render.py)              - Bee todos (POST /todos, alarm_at)
+(render.py)              - Bee todos (POST /v1/todos {text, alarm_at})
         |                - .ics export
-        v                - TruCalenZer outside route (client only)
+        v                - TruCalenZer: import file + Outlook "Torgy" route
 Study guide HTML
 + flashcards + quiz
 ```
@@ -51,7 +51,7 @@ Study guide HTML
 | `bee_stinger/quiz.py` | Cards → 3-level quiz (recall / understand / apply), deterministic |
 | `bee_stinger/render.py` | Cards + quiz + commitments → single-file study-guide HTML |
 | `bee_stinger/commitments.py` | Spoken commitments → dated items, with explicit and relative-weekday date resolution |
-| `bee_stinger/adapters.py` | Delivery: Bee todos, .ics, TruCalenZer route. Dry-run by default; real sends only behind `--live` |
+| `bee_stinger/adapters.py` | Delivery: Bee todos, .ics, TruCalenZer import file, TruCalenZer Outlook route. Network sends are dry-run by default; real sends only behind `--live` |
 | `bee_stinger/cli.py` | `demo` (fixture) and `fetch` (live Bee) entry points |
 
 ## Design rules
@@ -66,7 +66,7 @@ Study guide HTML
 - **Dry-run delivery.** Adapters print exactly what they would send.
   Nothing creates a to-do or calendar item unless a human runs `--live`.
 - **Secrets are environment variables only.** `BEE_TOKEN`, `LLM_API_KEY`,
-  `TRUCALENZER_ROUTE_TOKEN` — see `.env.example`.
+  `TRUCALENZER_GRAPH_TOKEN` — see `.env.example`.
 
 ## Boundaries
 
@@ -76,11 +76,21 @@ This repository is the extension layer only:
   card schema and unit format this project emits. It is referenced, not
   included, and is not covered by this repo's license. A guide produced
   here follows the TRSS unit pattern so it can be embedded into TRSS later.
-- **TruCalenZer** (TruJoe Digital) is a calendar destination. It exposes an
-  existing secure outside route; the adapter here is a *client* of that
-  route. The route's precise contract is being documented in a companion
-  investigation; until it lands, the adapter's payload shape is marked
-  provisional in the code, and .ics export is the guaranteed path.
+- **TruCalenZer** (TruJoe Digital) is a calendar destination. By design it
+  has no inbound network listener, so there is no URL to post to. The
+  adapters here are *clients* of the two ingress paths TruCalenZer's own
+  code accepts (contract documented in `bee_stinger/adapters.py`):
+  1. **Academic import file** — `output/trucalenzer-import.json`
+     (`{"assignments": [{"title", "course", "possible date", "source id",
+     "notes"}]}`), imported by the user inside TruCalenZer. Spoken dates
+     are written as *possible* dates only, per TruCalenZer's rule that a
+     date inferred from speech never becomes an official due date. Stable
+     source ids make re-imports update rather than duplicate.
+  2. **Outlook "Torgy" category** — with `--live` and
+     `TRUCALENZER_GRAPH_TOKEN`, a Microsoft Graph event categorized
+     `Torgy` is created; TruCalenZer's Outlook delta sync imports it as a
+     scheduled (undated) task. Outlook is a schedule in TruCalenZer, never
+     a due-date source, so route 1 is the one that carries the date.
 - The in-app assistants of both products are being moved behind a provider
   switch (`ASSISTANT_PROVIDER=gpt|bee`): GPT today, Bee chat if and when
   access and the project justify it. That work lives in those products,

@@ -1,102 +1,249 @@
 """Commitment delivery adapters.
 
-Every adapter is DRY-RUN by default: it prints exactly what it would send
-and touches nothing. A real send requires dry_run=False at construction
-(the CLI only allows that with --live), so an unattended run can never
-create calendar items or to-dos by accident.
+Every network adapter is DRY-RUN by default: it prints exactly what it
+would send and touches nothing. A real send requires dry_run=False at
+construction (the CLI only allows that with --live) AND credentials in the
+environment, so an unattended run can never create calendar items or
+to-dos by accident. Local file writers (.ics, TruCalenZer import file)
+write into the output directory only and send nothing.
 
 Destinations:
-- Bee todos (via BeeClient.create_todo, with alarm_at)
-- .ics calendar file (universal; imports into any calendar, incl. TruCalenZer)
-- TruCalenZer's existing secure outside route (HTTP client)
+- Bee todos: POST /v1/todos {"text", "alarm_at"} (docs.bee.computer/docs/api)
+- .ics calendar file (universal; imports into any calendar)
+- TruCalenZer, through the two ingress paths its own code accepts. The
+  adapter is a client only; TruCalenZer is not modified or included here.
 
-NOTE on the TruCalenZer adapter: Truman confirms the route exists and is
-secure. Its precise contract (endpoint, auth, payload) is being documented
-by a dedicated investigation (see docs/ENTRY-PLAN.md addenda). The payload
-shape below is PROVISIONAL until that contract lands; the adapter is a
-client of the route and must never modify TruCalenZer itself.
+TruCalenZer contract (read from TruCalenZer source, origin/main ba1a741,
+2026-10-21). TruCalenZer deliberately has NO inbound network listener
+("No public listening port in the production desktop build"), so there is
+no URL to POST to. It ingests outside items two ways:
+
+1. Academic import file (TruCalenZerImportFile). A local .json file the
+   user imports in TruCalenZer; it "does not upload the file anywhere".
+   Accepted JSON: an array of records, or {"assignments": [...]}. Keys are
+   matched case/punctuation-insensitively; this adapter writes:
+     "title"         -> task title (required)
+     "course"        -> course
+     "possible date" -> possibleDate (YYYY-MM-DD), dateConfidence "possible"
+     "source id"     -> sourceRecordId "import:<id>" (stable => re-import
+                        updates instead of duplicating)
+     "notes"         -> notes
+     "student name"  -> optional; resolves the student by display name
+   TruCalenZer's date-integrity rule: a date inferred from speech is a
+   *possible* date only and must never populate the official due date, so
+   this adapter never writes "official due date" / "due date" / "date".
+
+2. Outlook calendar via Microsoft Graph (TruCalenZerOutlookAdapter).
+   TruCalenZer delta-syncs the signed-in user's calendar
+   (GET /me/calendarView/delta, window -90..+365 days) and imports any
+   unlinked event whose categories include "Torgy" and that has a subject
+   and start time, as an undated task with scheduledAt = event start.
+   Outlook is a *schedule* in TruCalenZer, not a due-date source, so this
+   route yields a work block on the date, not a due date. Auth is the
+   user's own Microsoft Graph token (Calendars.ReadWrite) for the same
+   account TruCalenZer is connected to: TRUCALENZER_GRAPH_TOKEN.
+   The event body must not carry "Torgy-Task-ID:" marker lines; those are
+   TruCalenZer's own links and are never forged here.
 """
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
+import urllib.error
 import urllib.request
-from datetime import datetime, time, timezone
+import uuid
+from datetime import date, datetime, time, timedelta, timezone, tzinfo
 
-from .bee_client import BeeClient
+from . import USER_AGENT
+from .bee_client import BeeClient, BeeError
+
+GRAPH_EVENTS_URL = "https://graph.microsoft.com/v1.0/me/events"
+TRUCALENZER_CATEGORY = "Torgy"  # TruCalenZer's import marker category
+_ID_NAMESPACE = uuid.UUID("6b1f3c2e-8f0a-4c55-9d43-2f1e0b7a9c11")
+
+
+def commitment_key(item: dict, conversation_id=None) -> str:
+    """Stable id for one commitment, so re-runs update instead of duplicate."""
+    raw = f"{conversation_id}|{item['title'].lower()}|{item['date']}"
+    return hashlib.sha1(raw.encode("utf-8")).hexdigest()[:16]
+
+
+def _local_to_utc_iso(day: str, at: time, tz: tzinfo) -> str:
+    local = datetime.combine(date.fromisoformat(day), at, tzinfo=tz)
+    return local.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 class BeeTodoAdapter:
     name = "bee-todos"
 
-    def __init__(self, client: BeeClient | None = None, dry_run: bool = True):
+    def __init__(self, client: BeeClient | None = None, dry_run: bool = True,
+                 tz: tzinfo = timezone.utc, alarm_time: time = time(8, 0)):
         self.client = client
         self.dry_run = dry_run
+        self.tz = tz
+        self.alarm_time = alarm_time
+
+    def payload(self, item: dict) -> dict:
+        # Alarm at 08:00 in the lecture's own timezone, sent as UTC.
+        return {
+            "text": f"{item['title']} — {item['date']}",
+            "alarm_at": _local_to_utc_iso(item["date"], self.alarm_time, self.tz),
+        }
 
     def deliver(self, item: dict) -> dict:
-        payload = {
-            "title": f"{item['title']} — {item['date']}",
-            "alarm_at": f"{item['date']}T08:00:00Z",
-        }
-        if self.dry_run or self.client is None:
-            print(f"[dry-run:{self.name}] POST /todos {json.dumps(payload)}")
+        payload = self.payload(item)
+        if self.dry_run:
+            print(f"[dry-run:{self.name}] POST /v1/todos {json.dumps(payload, ensure_ascii=False)}")
             return {"adapter": self.name, "dry_run": True, "payload": payload}
-        result = self.client.create_todo(payload)
+        if self.client is None:
+            return {"adapter": self.name, "dry_run": False, "skipped": "BEE_TOKEN not set"}
+        try:
+            result = self.client.create_todo(payload["text"], payload["alarm_at"])
+        except BeeError as e:
+            return {"adapter": self.name, "dry_run": False, "error": str(e)}
         return {"adapter": self.name, "dry_run": False, "result": result}
+
+
+def _ics_escape(text: str) -> str:
+    return (text.replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,")
+            .replace("\r\n", "\\n").replace("\n", "\\n").replace("\r", ""))
+
+
+def _ics_fold(line: str) -> list[str]:
+    """RFC 5545 3.1: fold lines longer than 75 octets (UTF-8 safe)."""
+    out: list[str] = []
+    current, size = "", 0
+    for ch in line:
+        width = len(ch.encode("utf-8"))
+        limit = 75 if not out else 74  # continuation lines start with a space
+        if size + width > limit:
+            out.append(current)
+            current, size = "", 0
+        current += ch
+        size += width
+    out.append(current)
+    return [out[0]] + [" " + part for part in out[1:]]
 
 
 class IcsAdapter:
     name = "ics"
 
-    def __init__(self, path: str):
+    def __init__(self, path: str, conversation_id=None):
         self.path = path
+        self.conversation_id = conversation_id
 
-    def deliver_all(self, items: list[dict]) -> str:
-        lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Bee Stinger//EN"]
+    def render(self, items: list[dict]) -> str:
+        lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Bee Stinger//EN", "CALSCALE:GREGORIAN"]
         stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-        for i, item in enumerate(items):
-            d = item["date"].replace("-", "")
+        for item in items:
+            start = date.fromisoformat(item["date"])
             lines += [
                 "BEGIN:VEVENT",
-                f"UID:bee-stinger-{d}-{i}@trujoedigital",
+                f"UID:bee-stinger-{commitment_key(item, self.conversation_id)}@trujoedigital",
                 f"DTSTAMP:{stamp}",
-                f"DTSTART;VALUE=DATE:{d}",
-                f"SUMMARY:{item['title']}",
-                f"DESCRIPTION:From a Bee lecture capture. \"{item['quote']}\"",
+                f"DTSTART;VALUE=DATE:{start.strftime('%Y%m%d')}",
+                f"DTEND;VALUE=DATE:{(start + timedelta(days=1)).strftime('%Y%m%d')}",
+                f"SUMMARY:{_ics_escape(item['title'])}",
+                "DESCRIPTION:" + _ics_escape(
+                    f"Heard in a Bee lecture capture (date not officially confirmed). \"{item['quote']}\""
+                ),
                 "END:VEVENT",
             ]
         lines.append("END:VCALENDAR")
-        with open(self.path, "w", encoding="utf-8") as f:
-            f.write("\r\n".join(lines) + "\r\n")
+        folded = [part for line in lines for part in _ics_fold(line)]
+        return "\r\n".join(folded) + "\r\n"
+
+    def deliver_all(self, items: list[dict]) -> str:
+        with open(self.path, "w", encoding="utf-8", newline="") as f:
+            f.write(self.render(items))
         return self.path
 
 
-class TruCalenZerAdapter:
-    name = "trucalenzer"
+class TruCalenZerImportFile:
+    """Writes a TruCalenZer academic-import file (contract 1 above)."""
 
-    def __init__(self, route_url: str | None = None, token: str | None = None, dry_run: bool = True):
-        self.route_url = route_url or os.environ.get("TRUCALENZER_ROUTE_URL")
-        self.token = token or os.environ.get("TRUCALENZER_ROUTE_TOKEN")
+    name = "trucalenzer-import"
+
+    def __init__(self, path: str, course: str | None = None, conversation_id=None,
+                 student_name: str | None = None):
+        if not path.lower().endswith(".json"):
+            raise ValueError("TruCalenZer only parses JSON imports from files named *.json")
+        self.path = path
+        self.course = course
+        self.conversation_id = conversation_id
+        self.student_name = student_name if student_name is not None else os.environ.get("TRUCALENZER_STUDENT_NAME")
+
+    def record(self, item: dict) -> dict:
+        record = {
+            "title": item["title"],
+            "course": self.course or "",
+            "possible date": item["date"],
+            "source id": f"bee-stinger-{commitment_key(item, self.conversation_id)}",
+            "notes": f"From a Bee lecture capture ({item['kind']}). Heard: \"{item['quote']}\"",
+        }
+        if self.student_name:
+            record["student name"] = self.student_name
+        return record
+
+    def deliver_all(self, items: list[dict]) -> str:
+        with open(self.path, "w", encoding="utf-8") as f:
+            json.dump({"assignments": [self.record(i) for i in items]}, f, indent=2, ensure_ascii=False)
+        return self.path
+
+
+class TruCalenZerOutlookAdapter:
+    """Creates a "Torgy"-category Outlook event that TruCalenZer imports on
+    its next Outlook sync (contract 2 above). Dry-run by default."""
+
+    name = "trucalenzer-outlook"
+
+    def __init__(self, token: str | None = None, dry_run: bool = True, tz: tzinfo = timezone.utc,
+                 start_time: time = time(9, 0), minutes: int = 30, conversation_id=None):
+        self.token = token or os.environ.get("TRUCALENZER_GRAPH_TOKEN")
         self.dry_run = dry_run
+        self.tz = tz
+        self.start_time = start_time
+        self.minutes = minutes
+        self.conversation_id = conversation_id
+
+    def payload(self, item: dict) -> dict:
+        start = _local_to_utc_iso(item["date"], self.start_time, self.tz)
+        end_dt = datetime.strptime(start, "%Y-%m-%dT%H:%M:%SZ") + timedelta(minutes=self.minutes)
+        return {
+            "subject": item["title"],
+            "categories": [TRUCALENZER_CATEGORY],
+            "start": {"dateTime": start.rstrip("Z"), "timeZone": "UTC"},
+            "end": {"dateTime": end_dt.strftime("%Y-%m-%dT%H:%M:%S"), "timeZone": "UTC"},
+            "body": {
+                "contentType": "text",
+                "content": f"From a Bee lecture capture ({item['kind']}, date heard in class, "
+                           f"not officially confirmed). \"{item['quote']}\"",
+            },
+            # Graph de-duplicates event creation on transactionId, so a re-run
+            # of the same lecture does not create a second event.
+            "transactionId": str(uuid.uuid5(_ID_NAMESPACE, commitment_key(item, self.conversation_id))),
+        }
 
     def deliver(self, item: dict) -> dict:
-        # PROVISIONAL payload — replace with the documented route contract.
-        payload = {
-            "title": item["title"],
-            "date": item["date"],
-            "kind": item["kind"],
-            "source": "bee-stinger",
-            "quote": item["quote"],
-        }
-        if self.dry_run or not self.route_url:
-            print(f"[dry-run:{self.name}] POST {self.route_url or '<TRUCALENZER_ROUTE_URL unset>'} {json.dumps(payload)}")
+        payload = self.payload(item)
+        if self.dry_run:
+            print(f"[dry-run:{self.name}] POST {GRAPH_EVENTS_URL} {json.dumps(payload, ensure_ascii=False)}")
             return {"adapter": self.name, "dry_run": True, "payload": payload}
-        req = urllib.request.Request(
-            self.route_url, data=json.dumps(payload).encode(), method="POST"
-        )
+        if not self.token:
+            return {"adapter": self.name, "dry_run": False, "skipped": "TRUCALENZER_GRAPH_TOKEN not set"}
+        req = urllib.request.Request(GRAPH_EVENTS_URL, data=json.dumps(payload).encode(), method="POST")
+        req.add_header("Authorization", f"Bearer {self.token}")
         req.add_header("Content-Type", "application/json")
-        if self.token:
-            req.add_header("Authorization", f"Bearer {self.token}")
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            return {"adapter": self.name, "dry_run": False, "status": resp.status}
+        req.add_header("Prefer", 'outlook.timezone="UTC"')
+        req.add_header("User-Agent", USER_AGENT)
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                body = json.loads(resp.read().decode() or "{}")
+                return {"adapter": self.name, "dry_run": False, "status": resp.status, "event_id": body.get("id")}
+        except urllib.error.HTTPError as e:
+            detail = e.read().decode(errors="replace")[:300]
+            return {"adapter": self.name, "dry_run": False, "error": f"Graph HTTP {e.code}: {detail}"}
+        except urllib.error.URLError as e:
+            return {"adapter": self.name, "dry_run": False, "error": f"Graph unreachable: {e.reason}"}
