@@ -13,8 +13,12 @@ Bee Stinger is the automation layer after the transcript.
 
 ## Data flow
 
+The owner's pipeline (2026-10-21): Bee listens -> transcript -> TRSS study
+material as a subject -> the user is informed on the Bee to-do list ->
+the staged to-dos go to TruCalenZer, assigned to dates.
+
 ```
-Bee device / Apple Watch app
+Bee device / Apple Watch app       (interim: GPT stand-in, plain text  <- sources.py)
         |  capture
         v
 Bee API (REST + SSE stream)          <- bee_client.py
@@ -22,45 +26,118 @@ Bee API (REST + SSE stream)          <- bee_client.py
         v
 Transcript assembler                 <- assemble.py
         |  clean spoken text
-        +--------------------+---------------------+
-        v                    v                     v
-Concept extractor      Commitment extractor    (raw transcript kept)
-(extract.py)           (commitments.py)
-        |                    |
-        v                    v
-TRSS-schema cards      Commitment items {title, date, kind, quote}
-        |                    |
-        +--> Quiz builder (quiz.py, 3 levels, deterministic)
-        |                    |
-        v                    v
-Guide renderer         Adapters (adapters.py, dry-run by default)
-(render.py)              - Bee todos (POST /v1/todos {text, alarm_at})
-        |                - .ics export
-        v                - TruCalenZer: import file + Outlook "Torgy" route
-Study guide HTML
-+ flashcards + quiz
+        +--------------------------------------+
+        v                                      v
+Concept extractor (extract.py)         Commitment extractor (commitments.py)
+        |  TRSS-schema cards                   |  spoken items {title, date, kind, quote}
+        v                                      |
+Subject namer (subject.py)  ---- subject ----->+
+        |                                      v
+        +--> Quiz builder (quiz.py)     Study planner (study.py)
+        |                                      |  + kind "study" blocks
+        v                                      v
+Guide renderer (render.py)             commitments.json (spoken, then study)
+        |                                      |
+        |                                      v
+        |                     1. To-do stager (staging.py) -> staged_todos.json
+        |                        "Your study guide for <subject> is ready" first,
+        |                        then every commitment occurrence, date order
+        |                                      |
+        |                     2. Bee to-dos (adapters.py, dry-run by default)
+        |                                      |
+        |                     3. TruCalenZer, FROM the staged list:
+        |                        trucalenzer-import.json + commitments.ics
+        v
+guide.html + flashcards + quiz
+        |
+        v
+TRSS subject bundle (bundle.py) -> trss-subject/<subject>-chapter-<n>/
 ```
+
+Order matters: the staged Bee list is built before any TruCalenZer
+artifact, and both TruCalenZer writers read only that list, so what the
+user sees on Bee is exactly what TruCalenZer receives. Every dated staged
+to-do goes to TruCalenZer; the guide-ready to-do has no date, so it is
+the one item that stays on Bee only (`"to_trucalenzer": false` in
+`staged_todos.json`). A weekly study series is staged as one to-do per
+session (neither Bee to-dos nor TruCalenZer imports carry recurrence);
+the `.ics` writer folds the sessions back into one recurring event.
 
 ## Components
 
 | File | Role |
 |---|---|
 | `bee_stinger/bee_client.py` | Bee REST client + SSE stream subscriber; `FixtureClient` for offline runs |
+| `bee_stinger/sources.py` | Input sources beyond Bee: plain-text transcripts, and the interim GPT stand-in (labelled simulated, never presented as Bee data) |
 | `bee_stinger/assemble.py` | Conversation object → transcript lines / spoken text |
 | `bee_stinger/extract.py` | Transcript → TRSS-schema cards. LLM path (any OpenAI-compatible endpoint, env-configured) with a deterministic offline fallback |
+| `bee_stinger/subject.py` | Subject auto-naming: the conversation title (course code kept, filler dropped), else the first concepts, else a placeholder |
 | `bee_stinger/quiz.py` | Cards → 3-level quiz (recall / understand / apply), deterministic |
-| `bee_stinger/render.py` | Cards + quiz + commitments → single-file study-guide HTML |
+| `bee_stinger/render.py` | Cards + quiz + commitments → single-file study-guide HTML, headed by the subject |
 | `bee_stinger/commitments.py` | Spoken commitments → dated items, with explicit and relative-weekday date resolution |
+| `bee_stinger/study.py` | Study blocks (`kind: "study"`, `start`, `duration_minutes`, weekly `recurrence`), deterministic — see below |
+| `bee_stinger/staging.py` | The staged Bee to-do list (`staged_todos.json`) that Bee and TruCalenZer are both fed from |
 | `bee_stinger/adapters.py` | Delivery: Bee todos, .ics, TruCalenZer import file, TruCalenZer Outlook route. Network sends are dry-run by default; real sends only behind `--live` |
-| `bee_stinger/sources.py` | Input sources beyond Bee: plain-text transcripts, and the interim GPT stand-in (labelled simulated, never presented as Bee data) |
+| `bee_stinger/bundle.py` | TRSS subject bundle export — see below |
+| `bee_stinger/cli.py` | `demo` (fixture), `fetch` (live Bee), `file` (plain text) and `gpt` (interim stand-in) entry points |
 
 **Status note (2026-10-21, owner's call):** the Outlook/Microsoft Graph
 delivery route is implemented and verified against TruCalenZer's B1
-contract, but its live use is deferred. The project's current focus is
-the input side — Bee captures, with GPT as the interim source — and the
-guaranteed delivery artifacts (guide, Bee to-do payloads, .ics, import
-file).
-| `bee_stinger/cli.py` | `demo` (fixture) and `fetch` (live Bee) entry points |
+contract, but its live use is deferred. It is left as it was — dry-run
+printouts for the spoken commitments only — and is not part of the
+staged-list flow. The project's current focus is the input side (Bee
+captures, with GPT as the interim source) and the guaranteed delivery
+artifacts (guide, staged Bee to-dos, .ics, import file, TRSS bundle).
+
+## Study blocks
+
+From the capture date and the spoken commitments, `study.py` plans:
+
+- a weekly session, "Study: <Subject>", from the day after the capture
+  until the last exam (or a due date after it, if later);
+- a final review, "Final review: <Subject> (<exam>)", the day before each
+  exam;
+- with no exam date at all, a plain weekly series of 4 sessions.
+
+A weekly session that would land on an exam day or a review day is
+skipped and listed in `recurrence.exdates`. Times are a floating local
+wall-clock time (17:00 means 5 pm where the student is, across DST
+changes). Bee alarms fire when a block starts (spoken commitments keep
+their 08:00 alarm). TruCalenZer's import has no time or duration fields,
+so a block's window travels in its notes and its date arrives as a
+*possible* date, like every other date Bee Stinger sends. Every value is
+a CLI option: `--study-time`, `--study-minutes`, `--review-minutes`,
+`--study-weeks`.
+
+## TRSS subject bundle
+
+`trss-subject/<subject-slug>-chapter-<n>/` follows TRSS's finished-unit
+anatomy (`chapter-landing/BASE-MODEL.md`, `python/trssgen/emit.py`):
+
+- `digital-reference/lesson-cards.js` — `window.CH<n>_LESSON_CARDS`; a
+  spoken lecture yields lesson concepts. Ids `ch<n>-lesson-NNN`, type
+  `lesson-concept`, non-empty `examples`, `apply` as `string[]` whose
+  first prompt never names its own answer (study.js shows `apply[0]` as
+  the Level-3 question).
+- `core-cards.js` / `extra-cards.js` — present and empty (`[]`).
+- `lesson-targets.js` — one learning objective per concept.
+- `generated-study-data.js` — counts derived from the cards
+  (questions = 3 × cards).
+- `index.html` — the quiz wiring: the `window.TRSS_CHAPTER` identity line
+  in the exact form TRSS's audit parses, then the load-bearing script
+  order (core, lesson, extra, study.js).
+- `quiz-wiring.json` — the L3 → L2 → L1 question set study.js derives.
+- `trss-session-policy.json`, `guide.html`, `bundle-manifest.json`.
+
+TRSS's own runtime (`study.js`, `reference.css`, the study-page shell) is
+not copied into this MIT repository; the manifest names those files and
+the install steps (apply-landing.py, audit-chapter.py, deploy-pack.py).
+Checked by hand on 2026-10-21 against Study-Generator- `8ff3ad2`, in a
+scratch copy: the fixture bundle, with those three files added from
+`python/trssgen/templates/`, passes `apply-landing.py` and
+`audit-chapter.py` ("in line, 7 cards, 21 questions"). The `--trss-unit`
+option sets the unit number. The bundle is byte-identical for the same
+capture (`generatedAt` is the capture time, not the wall clock).
 
 ## Design rules
 
@@ -73,6 +150,9 @@ file).
   not a license for variance in structure.
 - **Dry-run delivery.** Adapters print exactly what they would send.
   Nothing creates a to-do or calendar item unless a human runs `--live`.
+- **No billable calls in tests.** Every LLM/API path in the selftest runs
+  against a stubbed transport, and dry-run runs are asserted to make zero
+  network calls.
 - **Secrets are environment variables only.** `BEE_TOKEN`, `LLM_API_KEY`,
   `TRUCALENZER_GRAPH_TOKEN` — see `.env.example`.
 
