@@ -11,16 +11,18 @@ SSE parsing, and Bee conversation shapes. No network, no keys.
 import contextlib
 import io
 import os
+import re
 import sys
 import tempfile
 import urllib.request
+import uuid
 from datetime import date, timedelta, timezone
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from bee_stinger import cli  # noqa: E402
 from bee_stinger.adapters import (  # noqa: E402
-    BeeTodoAdapter, IcsAdapter, TruCalenZerImportFile, TruCalenZerOutlookAdapter,
+    GRAPH_EVENTS_URL, BeeTodoAdapter, IcsAdapter, TruCalenZerImportFile, TruCalenZerOutlookAdapter,
 )
 from bee_stinger.assemble import spoken_text, title_of, transcript_lines  # noqa: E402
 from bee_stinger.bee_client import (  # noqa: E402
@@ -199,9 +201,55 @@ def adapter_checks() -> None:
           graph["subject"] == "First Exam"
           and graph["start"] == {"dateTime": "2026-10-29T14:00:00", "timeZone": "UTC"}
           and graph["end"] == {"dateTime": "2026-10-29T14:30:00", "timeZone": "UTC"}, str(graph))
-    check("TruCalenZer Outlook event never forges Torgy-Task-ID markers", "Torgy-Task-ID" not in graph["body"]["content"])
+    content = graph["body"]["content"]
+    marker = re.search(r"(?:^|\n)Torgy-Task-ID: ([0-9a-f-]{36})\nTorgy-Task-Version: 1$", content)
+    check("TruCalenZer Outlook body carries B1 markers on their own lines",
+          marker is not None and uuid.UUID(marker.group(1)).version in (1, 2, 3, 4, 5), content)
+    check("TruCalenZer Outlook Torgy-Task-ID stable across runs",
+          marker is not None
+          and marker.group(1) in TruCalenZerOutlookAdapter(tz=cdt, conversation_id="c1").payload(item)["body"]["content"])
     check("TruCalenZer Outlook transactionId stable across runs",
           graph["transactionId"] == TruCalenZerOutlookAdapter(tz=cdt, conversation_id="c1").payload(item)["transactionId"])
+    sliver = TruCalenZerOutlookAdapter(tz=cdt, conversation_id="c1", minutes=2).payload(item)
+    check("TruCalenZer Outlook block under 5 min falls back to 30 (B1)",
+          sliver["end"] == {"dateTime": "2026-10-29T14:30:00", "timeZone": "UTC"}, str(sliver))
+    long_block = TruCalenZerOutlookAdapter(tz=cdt, conversation_id="c1", minutes=45).payload(item)
+    check("TruCalenZer Outlook block honors durations >= 5 min",
+          long_block["end"] == {"dateTime": "2026-10-29T14:45:00", "timeZone": "UTC"}, str(long_block))
+
+    # Live send, captured: the request must hit /me/events carrying the full
+    # B1 Prefer header and the adapter's own Bearer token.
+    sent = {}
+
+    class _FakeGraphResp:
+        status = 201
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+        def read(self):
+            return b'{"id": "evt-1"}'
+
+    def _capture(req, timeout=None):
+        sent["req"] = req
+        return _FakeGraphResp()
+
+    real_urlopen = urllib.request.urlopen
+    urllib.request.urlopen = _capture
+    try:
+        outcome = TruCalenZerOutlookAdapter(
+            token="test-token", dry_run=False, tz=cdt, conversation_id="c1").deliver(item)
+    finally:
+        urllib.request.urlopen = real_urlopen
+    req = sent.get("req")
+    check("TruCalenZer live send: /me/events + full B1 Prefer header + own Bearer token",
+          req is not None and req.full_url == GRAPH_EVENTS_URL
+          and req.get_header("Prefer") == 'outlook.timezone="UTC", IdType="ImmutableId"'
+          and req.get_header("Authorization") == "Bearer test-token"
+          and outcome.get("status") == 201 and outcome.get("event_id") == "evt-1", str(outcome))
 
     rec = TruCalenZerImportFile("x.json", course="ECON 101", conversation_id="c1").record(item)
     check("TruCalenZer import record uses 'possible date' only",
