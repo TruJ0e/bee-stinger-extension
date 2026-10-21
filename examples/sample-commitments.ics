@@ -1,25 +1,34 @@
 BEGIN:VCALENDAR
 VERSION:2.0
 PRODID:-//Bee Stinger//EN
+CALSCALE:GREGORIAN
 BEGIN:VEVENT
-UID:bee-stinger-20261023-0@trujoedigital
-DTSTAMP:20261021T075505Z
+UID:bee-stinger-fadcc2017cc53191@trujoedigital
+DTSTAMP:20261021T081004Z
 DTSTART;VALUE=DATE:20261023
+DTEND;VALUE=DATE:20261024
 SUMMARY:Problem Set 3 due
-DESCRIPTION:From a Bee lecture capture. "Problem set 3 is due Friday at the start of class."
+DESCRIPTION:Heard in a Bee lecture capture (date not officially confirmed).
+  "Problem set 3 is due Friday at the start of class."
 END:VEVENT
 BEGIN:VEVENT
-UID:bee-stinger-20261026-1@trujoedigital
-DTSTAMP:20261021T075505Z
+UID:bee-stinger-32bce1a93f5304f2@trujoedigital
+DTSTAMP:20261021T081004Z
 DTSTART;VALUE=DATE:20261026
+DTEND;VALUE=DATE:20261027
 SUMMARY:Read Chapter 4
-DESCRIPTION:From a Bee lecture capture. "And read chapter 4 before Monday's class, because we start market failures then."
+DESCRIPTION:Heard in a Bee lecture capture (date not officially confirmed).
+  "And read chapter 4 before Monday's class\, because we start market failu
+ res then."
 END:VEVENT
 BEGIN:VEVENT
-UID:bee-stinger-20261029-2@trujoedigital
-DTSTAMP:20261021T075505Z
+UID:bee-stinger-79b7e91c141f1d5d@trujoedigital
+DTSTAMP:20261021T081004Z
 DTSTART;VALUE=DATE:20261029
+DTEND;VALUE=DATE:20261030
 SUMMARY:First Exam
-DESCRIPTION:From a Bee lecture capture. "Your first exam is on Thursday, October 29, and it covers everything through elasticity."
+DESCRIPTION:Heard in a Bee lecture capture (date not officially confirmed).
+  "Your first exam is on Thursday\, October 29\, and it covers everything t
+ hrough elasticity."
 END:VEVENT
 END:VCALENDAR

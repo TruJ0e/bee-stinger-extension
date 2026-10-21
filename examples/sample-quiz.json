@@ -5,10 +5,10 @@
     "card_id": "demand",
     "prompt": "What is Demand?",
     "choices": [
-      "Demand is the quantity of a good that buyers are willing and able to purchase at a given price.",
-      "Supply is the quantity of a good that producers are willing to sell at a given price.",
-      "Equilibrium is the price at which the quantity buyers want exactly equals the quantity sellers offer.",
-      "A shortage is the situation where quantity demanded exceeds quantity supplied at the current price."
+      "____ is the quantity of a good that buyers are willing and able to purchase at a given price.",
+      "____ is the quantity of a good that producers are willing to sell at a given price.",
+      "____ is the price at which the quantity buyers want exactly equals the quantity sellers offer.",
+      "A ____ is the situation where quantity demanded exceeds quantity supplied at the current price."
     ],
     "answer_index": 0
   },
@@ -29,7 +29,7 @@
     "level": 3,
     "type": "multiple_choice",
     "card_id": "demand",
-    "prompt": "Application check. Explain how Demand would show up in a real situation, in your own words. Which concept is this task about?",
+    "prompt": "Application check. Someone describes it this way: \"____ is the quantity of a good that buyers are willing and able to purchase at a given price.\" Which concept is this about?",
     "choices": [
       "Shortage",
       "Surplus",
@@ -44,10 +44,10 @@
     "card_id": "law-of-demand",
     "prompt": "What is Law of Demand?",
     "choices": [
-      "Equilibrium is the price at which the quantity buyers want exactly equals the quantity sellers offer.",
-      "The law of demand is the principle that, all else equal, quantity demanded falls as price rises.",
-      "A shortage is the situation where quantity demanded exceeds quantity supplied at the current price.",
-      "A surplus is the situation where quantity supplied exceeds quantity demanded at the current price."
+      "____ is the price at which the quantity buyers want exactly equals the quantity sellers offer.",
+      "The ____ is the principle that, all else equal, quantity demanded falls as price rises.",
+      "A ____ is the situation where quantity demanded exceeds quantity supplied at the current price.",
+      "A ____ is the situation where quantity supplied exceeds quantity demanded at the current price."
     ],
     "answer_index": 1
   },
@@ -55,7 +55,7 @@
     "level": 3,
     "type": "multiple_choice",
     "card_id": "law-of-demand",
-    "prompt": "Application check. Explain how Law of Demand would show up in a real situation, in your own words. Which concept is this task about?",
+    "prompt": "Application check. Someone describes it this way: \"The ____ is the principle that, all else equal, quantity demanded falls as price rises.\" Which concept is this about?",
     "choices": [
       "Surplus",
       "Elasticity",
@@ -70,10 +70,10 @@
     "card_id": "supply",
     "prompt": "What is Supply?",
     "choices": [
-      "A shortage is the situation where quantity demanded exceeds quantity supplied at the current price.",
-      "A surplus is the situation where quantity supplied exceeds quantity demanded at the current price.",
-      "Supply is the quantity of a good that producers are willing to sell at a given price.",
-      "Elasticity is a measure of how strongly quantity demanded or supplied responds to a change in price."
+      "A ____ is the situation where quantity demanded exceeds quantity supplied at the current price.",
+      "A ____ is the situation where quantity supplied exceeds quantity demanded at the current price.",
+      "____ is the quantity of a good that producers are willing to sell at a given price.",
+      "____ is a measure of how strongly quantity demanded or supplied responds to a change in price."
     ],
     "answer_index": 2
   },
@@ -94,7 +94,7 @@
     "level": 3,
     "type": "multiple_choice",
     "card_id": "supply",
-    "prompt": "Application check. Explain how Supply would show up in a real situation, in your own words. Which concept is this task about?",
+    "prompt": "Application check. Someone describes it this way: \"____ is the quantity of a good that producers are willing to sell at a given price.\" Which concept is this about?",
     "choices": [
       "Supply",
       "Elasticity",
@@ -109,10 +109,10 @@
     "card_id": "equilibrium",
     "prompt": "What is Equilibrium?",
     "choices": [
-      "A surplus is the situation where quantity supplied exceeds quantity demanded at the current price.",
-      "Elasticity is a measure of how strongly quantity demanded or supplied responds to a change in price.",
-      "Demand is the quantity of a good that buyers are willing and able to purchase at a given price.",
-      "Equilibrium is the price at which the quantity buyers want exactly equals the quantity sellers offer."
+      "A ____ is the situation where quantity supplied exceeds quantity demanded at the current price.",
+      "____ is a measure of how strongly quantity demanded or supplied responds to a change in price.",
+      "____ is the quantity of a good that buyers are willing and able to purchase at a given price.",
+      "____ is the price at which the quantity buyers want exactly equals the quantity sellers offer."
     ],
     "answer_index": 3
   },
@@ -120,7 +120,7 @@
     "level": 3,
     "type": "multiple_choice",
     "card_id": "equilibrium",
-    "prompt": "Application check. Explain how Equilibrium would show up in a real situation, in your own words. Which concept is this task about?",
+    "prompt": "Application check. Someone describes it this way: \"____ is the price at which the quantity buyers want exactly equals the quantity sellers offer.\" Which concept is this about?",
     "choices": [
       "Demand",
       "Equilibrium",
@@ -135,10 +135,10 @@
     "card_id": "shortage",
     "prompt": "What is Shortage?",
     "choices": [
-      "A shortage is the situation where quantity demanded exceeds quantity supplied at the current price.",
-      "Elasticity is a measure of how strongly quantity demanded or supplied responds to a change in price.",
-      "Demand is the quantity of a good that buyers are willing and able to purchase at a given price.",
-      "The law of demand is the principle that, all else equal, quantity demanded falls as price rises."
+      "A ____ is the situation where quantity demanded exceeds quantity supplied at the current price.",
+      "____ is a measure of how strongly quantity demanded or supplied responds to a change in price.",
+      "____ is the quantity of a good that buyers are willing and able to purchase at a given price.",
+      "The ____ is the principle that, all else equal, quantity demanded falls as price rises."
     ],
     "answer_index": 0
   },
@@ -146,7 +146,7 @@
     "level": 2,
     "type": "multiple_choice",
     "card_id": "shortage",
-    "prompt": "Which concept does this example illustrate? \"For instance, during the shortage last spring, the bookstore ran out of calculators in the first week.\"",
+    "prompt": "Which concept does this example illustrate? \"For instance, during the ____ last spring, the bookstore ran out of calculators in the first week.\"",
     "choices": [
       "Demand",
       "Shortage",
@@ -159,7 +159,7 @@
     "level": 3,
     "type": "multiple_choice",
     "card_id": "shortage",
-    "prompt": "Application check. Explain how Shortage would show up in a real situation, in your own words. Which concept is this task about?",
+    "prompt": "Application check. Someone describes it this way: \"A ____ is the situation where quantity demanded exceeds quantity supplied at the current price.\" Which concept is this about?",
     "choices": [
       "Law of Demand",
       "Supply",
@@ -174,10 +174,10 @@
     "card_id": "surplus",
     "prompt": "What is Surplus?",
     "choices": [
-      "Demand is the quantity of a good that buyers are willing and able to purchase at a given price.",
-      "A surplus is the situation where quantity supplied exceeds quantity demanded at the current price.",
-      "The law of demand is the principle that, all else equal, quantity demanded falls as price rises.",
-      "Supply is the quantity of a good that producers are willing to sell at a given price."
+      "____ is the quantity of a good that buyers are willing and able to purchase at a given price.",
+      "A ____ is the situation where quantity supplied exceeds quantity demanded at the current price.",
+      "The ____ is the principle that, all else equal, quantity demanded falls as price rises.",
+      "____ is the quantity of a good that producers are willing to sell at a given price."
     ],
     "answer_index": 1
   },
@@ -185,7 +185,7 @@
     "level": 3,
     "type": "multiple_choice",
     "card_id": "surplus",
-    "prompt": "Application check. Explain how Surplus would show up in a real situation, in your own words. Which concept is this task about?",
+    "prompt": "Application check. Someone describes it this way: \"A ____ is the situation where quantity supplied exceeds quantity demanded at the current price.\" Which concept is this about?",
     "choices": [
       "Supply",
       "Equilibrium",
@@ -200,10 +200,10 @@
     "card_id": "elasticity",
     "prompt": "What is Elasticity?",
     "choices": [
-      "The law of demand is the principle that, all else equal, quantity demanded falls as price rises.",
-      "Supply is the quantity of a good that producers are willing to sell at a given price.",
-      "Elasticity is a measure of how strongly quantity demanded or supplied responds to a change in price.",
-      "Equilibrium is the price at which the quantity buyers want exactly equals the quantity sellers offer."
+      "The ____ is the principle that, all else equal, quantity demanded falls as price rises.",
+      "____ is the quantity of a good that producers are willing to sell at a given price.",
+      "____ is a measure of how strongly quantity demanded or supplied responds to a change in price.",
+      "____ is the price at which the quantity buyers want exactly equals the quantity sellers offer."
     ],
     "answer_index": 2
   },
@@ -224,7 +224,7 @@
     "level": 3,
     "type": "multiple_choice",
     "card_id": "elasticity",
-    "prompt": "Application check. Explain how Elasticity would show up in a real situation, in your own words. Which concept is this task about?",
+    "prompt": "Application check. Someone describes it this way: \"____ is a measure of how strongly quantity demanded or supplied responds to a change in price.\" Which concept is this about?",
     "choices": [
       "Elasticity",
       "Equilibrium",
