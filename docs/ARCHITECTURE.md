@@ -52,6 +52,14 @@ Study guide HTML
 | `bee_stinger/render.py` | Cards + quiz + commitments → single-file study-guide HTML |
 | `bee_stinger/commitments.py` | Spoken commitments → dated items, with explicit and relative-weekday date resolution |
 | `bee_stinger/adapters.py` | Delivery: Bee todos, .ics, TruCalenZer import file, TruCalenZer Outlook route. Network sends are dry-run by default; real sends only behind `--live` |
+| `bee_stinger/sources.py` | Input sources beyond Bee: plain-text transcripts, and the interim GPT stand-in (labelled simulated, never presented as Bee data) |
+
+**Status note (2026-10-21, owner's call):** the Outlook/Microsoft Graph
+delivery route is implemented and verified against TruCalenZer's B1
+contract, but its live use is deferred. The project's current focus is
+the input side — Bee captures, with GPT as the interim source — and the
+guaranteed delivery artifacts (guide, Bee to-do payloads, .ics, import
+file).
 | `bee_stinger/cli.py` | `demo` (fixture) and `fetch` (live Bee) entry points |
 
 ## Design rules

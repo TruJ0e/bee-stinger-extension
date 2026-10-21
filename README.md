@@ -19,8 +19,21 @@ pipeline offline on a bundled fixture lecture — no Bee account, no keys:
 
 ```bash
 python3 -m bee_stinger.cli demo          # writes guide/cards/quiz/commitments into ./output
-python3 tests/selftest.py                # 20 checks, all offline
+python3 tests/selftest.py                # 96 checks, all offline
 ```
+
+Other inputs — the pipeline doesn't care where a transcript came from:
+
+```bash
+python3 -m bee_stinger.cli file --path lecture.txt --title "BIO 101"
+python3 -m bee_stinger.cli gpt --topic "Photosynthesis"   # interim stand-in, needs LLM_API_KEY
+```
+
+The `gpt` command generates a lecture transcript on a topic with the
+configured LLM: an interim input source for exercising the flow before a
+Bee token exists, and a demo aid. Its output is labelled simulated
+everywhere it surfaces — it is not Bee data, and never a substitute for
+a real capture.
 
 A real capture, once you have a Bee developer token (Developer Mode on in
 the Bee app, token in the environment — see `.env.example`):
@@ -34,8 +47,10 @@ Set `LLM_API_KEY` (any OpenAI-compatible endpoint) to use the LLM
 extraction path; without it, a deterministic offline extractor runs
 instead. Delivery adapters are dry-run by default and print exactly what
 they would send; `--live` enables real sends. TruCalenZer delivery is a
-local import file (`output/trucalenzer-import.json`) plus, with `--live`,
-an Outlook-category route — see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+local import file (`output/trucalenzer-import.json`); the Outlook/Graph
+route is implemented and contract-verified but **deferred by the owner's
+call (2026-10-21)** — current focus is input (Bee, or GPT for now). See
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 Design and boundaries: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) ·
 Build plan: [docs/ENTRY-PLAN.md](docs/ENTRY-PLAN.md) ·

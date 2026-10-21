@@ -12,6 +12,18 @@
       Same pipeline against a live Bee conversation (requires BEE_TOKEN,
       Developer Mode enabled in the Bee app).
 
+  python -m bee_stinger.cli file --path TRANSCRIPT.txt [--title T] [--out DIR]
+      Same pipeline on a plain-text transcript from any source.
+
+  python -m bee_stinger.cli gpt --topic "Photosynthesis" [--out DIR]
+      INTERIM stand-in input: generate a lecture transcript on the topic
+      with the configured LLM (requires LLM_API_KEY), then run the same
+      pipeline. Simulated data for development/demo — not a Bee capture.
+
+Inputs: Bee is the real source. GPT is the interim source until a Bee
+developer token is available. Plain text takes a transcript from anywhere.
+See bee_stinger/sources.py.
+
 Outputs: guide.html, cards.json, quiz.json, commitments.json,
 commitments.ics, trucalenzer-import.json, transcript.txt in the output
 directory.
@@ -32,6 +44,7 @@ from .commitments import extract_commitments
 from .extract import extract_cards
 from .quiz import build_quiz
 from .render import render_guide
+from .sources import SourceError, conversation_from_text, generate_lecture_conversation
 
 FIXTURE = os.path.join(os.path.dirname(__file__), "..", "fixtures", "lecture_conversation.json")
 
@@ -130,6 +143,17 @@ def main(argv: list[str] | None = None) -> int:
     p_fetch.add_argument("--out", default="output")
     p_fetch.add_argument("--live", action="store_true")
 
+    p_file = sub.add_parser("file", help="run the pipeline on a plain-text transcript")
+    p_file.add_argument("--path", required=True)
+    p_file.add_argument("--title")
+    p_file.add_argument("--out", default="output")
+    p_file.add_argument("--live", action="store_true")
+
+    p_gpt = sub.add_parser("gpt", help="INTERIM: generate a lecture on a topic with the LLM, then run the pipeline")
+    p_gpt.add_argument("--topic", required=True)
+    p_gpt.add_argument("--out", default="output")
+    p_gpt.add_argument("--live", action="store_true")
+
     args = parser.parse_args(argv)
 
     try:
@@ -137,13 +161,21 @@ def main(argv: list[str] | None = None) -> int:
             client = FixtureClient(os.path.abspath(FIXTURE))
             conversation = client.conversation()
             summary = run_pipeline(conversation, args.out, live=args.live)
+        elif args.command == "file":
+            with open(args.path, "r", encoding="utf-8") as f:
+                conversation = conversation_from_text(f.read(), title=args.title)
+            summary = run_pipeline(conversation, args.out, live=args.live)
+        elif args.command == "gpt":
+            conversation = generate_lecture_conversation(args.topic)
+            print("Input:        GPT stand-in (simulated lecture on the topic — NOT Bee data)")
+            summary = run_pipeline(conversation, args.out, live=args.live)
         else:
             bee = BeeClient()
             conversation = bee.conversation(args.conversation)
             if not isinstance(conversation, dict):
                 raise BeeError(f"Unexpected conversation response type: {type(conversation).__name__}")
             summary = run_pipeline(conversation, args.out, live=args.live, bee_client=bee)
-    except (BeeError, OSError, ValueError) as e:
+    except (BeeError, SourceError, OSError, ValueError) as e:
         print(f"bee-stinger: {e}", file=sys.stderr)
         return 2
 

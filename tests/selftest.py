@@ -34,6 +34,7 @@ from bee_stinger.extract import (  # noqa: E402
 )
 from bee_stinger.quiz import build_quiz  # noqa: E402
 from bee_stinger.render import render_guide  # noqa: E402
+from bee_stinger.sources import SourceError, conversation_from_text, generate_lecture_conversation  # noqa: E402
 
 FIXTURE = os.path.join(os.path.dirname(__file__), "..", "fixtures", "lecture_conversation.json")
 FAILURES = []
@@ -358,6 +359,65 @@ def bee_client_checks() -> None:
           fake.calls[1] == ("POST", "/todos", {"text": "Read ch 4", "alarm_at": "2026-10-26T13:00:00Z"}))
 
 
+def source_checks():
+    import json as _json
+    from datetime import datetime as _dt
+
+    text = (
+        "Dr. Lee: Photosynthesis is the process by which plants convert sunlight into chemical energy.\n"
+        "For example, a sunflower turns toward the light to capture more energy.\n\n"
+        "Homework 2 is due Friday at the start of class."
+    )
+    conv = conversation_from_text(text, title="BIO 101", when=_dt(2026, 10, 21, 9, 0, tzinfo=timezone.utc))
+    check("text source keeps an explicit speaker", conv["utterances"][0]["speaker"] == "Dr. Lee")
+    check("text source defaults the speaker", conv["utterances"][1]["speaker"] == "Lecturer")
+    check("text source marks provenance", conv["source"] == "text" and conv["id"].startswith("text-"))
+    spoken = spoken_text(conv)
+    cards = extract_cards_offline(spoken, conv["title"])
+    check("text source feeds extraction", any(c["term"] == "Photosynthesis" for c in cards))
+    items = extract_commitments(spoken, date(2026, 10, 21))
+    check("text source feeds commitments", any(i["date"] == "2026-10-23" for i in items), f"got {items}")
+
+    # GPT source without a key: clean, explicit failure, no silent fallback.
+    saved = os.environ.pop("LLM_API_KEY", None)
+    try:
+        generate_lecture_conversation("Photosynthesis")
+        check("gpt source without a key fails cleanly", False)
+    except SourceError:
+        check("gpt source without a key fails cleanly", True)
+
+    # GPT source with a stubbed transport: shape + labelling, no network.
+    lecture = (
+        "Supply is the quantity of a good producers will sell at a given price.\n\n"
+        "Your exam is on Thursday, November 5."
+    )
+
+    class _Resp:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def read(self):
+            return _json.dumps({"choices": [{"message": {"content": lecture}}]}).encode()
+
+    real_urlopen = urllib.request.urlopen
+    os.environ["LLM_API_KEY"] = "test-key"
+    urllib.request.urlopen = lambda *a, **k: _Resp()
+    try:
+        conv2 = generate_lecture_conversation("Supply", when=_dt(2026, 10, 21, tzinfo=timezone.utc))
+    finally:
+        urllib.request.urlopen = real_urlopen
+        if saved is not None:
+            os.environ["LLM_API_KEY"] = saved
+        else:
+            os.environ.pop("LLM_API_KEY", None)
+    check("gpt source labels itself a stand-in",
+          conv2["source"] == "gpt-stand-in" and conv2["id"].startswith("gpt-sim-"))
+    check("gpt source yields utterances", len(conv2["utterances"]) >= 2)
+
+
 def main() -> int:
     cards = fixture_checks()
     commitment_checks()
@@ -365,6 +425,7 @@ def main() -> int:
     quiz_checks(cards)
     adapter_checks()
     bee_client_checks()
+    source_checks()
 
     print()
     if FAILURES:
