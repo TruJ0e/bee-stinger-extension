@@ -6,6 +6,14 @@ Deterministic pattern extraction with real date resolution:
   resolved against the conversation's reference date.
 
 Each item: {"title", "date" (ISO yyyy-mm-dd), "kind", "quote"}.
+
+These are dates *heard in speech*, so downstream destinations must treat
+them as suggestions, never as an authoritative/official due date (the
+TruCalenZer adapter enforces this; see adapters.py).
+
+Heuristic limits (deliberate, documented): one commitment per sentence;
+the first date in a sentence wins; "3/4" is read as a date only when it
+is a valid month/day; "last Friday" (past) is ignored.
 """
 
 from __future__ import annotations
@@ -28,13 +36,16 @@ _MONTH_ALT = "|".join(sorted(_MONTHS, key=len, reverse=True))
 _WD_ALT = "|".join(_WEEKDAYS)
 
 _EXPLICIT_DATE = re.compile(
-    rf"\b(?P<month>{_MONTH_ALT})\s+(?P<day>\d{{1,2}})(?:st|nd|rd|th)?\b", re.IGNORECASE
+    rf"\b(?P<month>{_MONTH_ALT})\.?\s+(?P<day>\d{{1,2}})(?:st|nd|rd|th)?\b(?:,?\s+(?P<year>20\d\d)\b)?",
+    re.IGNORECASE,
 )
-_NUMERIC_DATE = re.compile(r"\b(?P<month>\d{1,2})/(?P<day>\d{1,2})\b")
-_WEEKDAY = re.compile(rf"\b(?:(next|this)\s+)?(?P<wd>{_WD_ALT})\b", re.IGNORECASE)
+_NUMERIC_DATE = re.compile(r"\b(?P<month>\d{1,2})/(?P<day>\d{1,2})(?:/(?P<year>20\d\d|\d\d))?\b")
+_WEEKDAY = re.compile(rf"\b(?:(next|this|last)\s+)?(?P<wd>{_WD_ALT})\b", re.IGNORECASE)
 
+# "final" alone means the final exam; "final project/paper/..." is a deliverable.
+_FINAL_NOT_EXAM = r"(?!\s+(?:project|paper|draft|essay|report|version|presentation|submission))"
 _KIND_PATTERNS = [
-    ("exam", re.compile(r"\b(exam|midterm|final|test|quiz)\b", re.IGNORECASE)),
+    ("exam", re.compile(rf"\b(exam|midterm|test|quiz)\b|\bfinal\b{_FINAL_NOT_EXAM}", re.IGNORECASE)),
     ("due", re.compile(r"\b(due|submit|turn in|deadline)\b", re.IGNORECASE)),
     ("reading", re.compile(r"\b(read|reading|chapter)\b", re.IGNORECASE)),
 ]
@@ -54,21 +65,38 @@ def _resolve_weekday(name: str, ref: date, modifier: str | None) -> date:
     return ref + timedelta(days=delta)
 
 
+def _safe_date(year: int, month: int, day: int) -> date | None:
+    try:
+        return date(year, month, day)
+    except ValueError:
+        return None  # "February 30", "13/40", ...
+
+
+def _calendar_date(month: int, day: int, year_text: str | None, ref: date) -> date | None:
+    """Resolve month/day (+ optional year) near the reference date. Without
+    a year, a date more than 30 days in the past rolls to next year (a
+    December lecture announcing a "January 12" exam)."""
+    if year_text:
+        year = int(year_text)
+        return _safe_date(year + 2000 if year < 100 else year, month, day)
+    candidate = _safe_date(ref.year, month, day)
+    if candidate is not None and candidate < ref - timedelta(days=30):
+        candidate = _safe_date(ref.year + 1, month, day)
+    return candidate
+
+
 def _find_date(sentence: str, ref: date) -> date | None:
-    m = _EXPLICIT_DATE.search(sentence)
-    if m:
-        month = _MONTHS[m.group("month").lower()]
-        day = int(m.group("day"))
-        year = ref.year
-        candidate = date(year, month, day)
-        if candidate < ref - timedelta(days=30):
-            candidate = date(year + 1, month, day)
-        return candidate
-    m = _NUMERIC_DATE.search(sentence)
-    if m:
-        return date(ref.year, int(m.group("month")), int(m.group("day")))
-    m = _WEEKDAY.search(sentence)
-    if m:
+    for m in _EXPLICIT_DATE.finditer(sentence):
+        found = _calendar_date(_MONTHS[m.group("month").lower()], int(m.group("day")), m.group("year"), ref)
+        if found:
+            return found
+    for m in _NUMERIC_DATE.finditer(sentence):
+        found = _calendar_date(int(m.group("month")), int(m.group("day")), m.group("year"), ref)
+        if found:
+            return found
+    for m in _WEEKDAY.finditer(sentence):
+        if m.group(1) and m.group(1).lower() == "last":
+            continue
         return _resolve_weekday(m.group("wd"), ref, m.group(1))
     return None
 
@@ -90,6 +118,8 @@ def _title_for(sentence: str, kind: str) -> str:
 
 def extract_commitments(text: str, reference_date: date) -> list[dict]:
     items: list[dict] = []
+    if not text or not text.strip():
+        return items
     seen: set[tuple[str, str]] = set()
     for sentence in _sentences(text):
         kind = None
@@ -111,7 +141,7 @@ def extract_commitments(text: str, reference_date: date) -> list[dict]:
             "title": title,
             "date": when.isoformat(),
             "kind": kind,
-            "quote": sentence.rstrip(".") + ".",
+            "quote": sentence if sentence[-1:] in ".!?" else sentence + ".",
         })
     items.sort(key=lambda i: i["date"])
     return items

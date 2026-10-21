@@ -18,7 +18,11 @@ from __future__ import annotations
 import json
 import os
 import re
+import sys
+import urllib.error
 import urllib.request
+
+from . import USER_AGENT
 
 SCHEMA_FIELDS = ["id", "term", "type", "category", "cue", "simple", "examples", "apply"]
 
@@ -65,29 +69,94 @@ Transcript:
 """
 
 
-def extract_cards_llm(text: str, title: str) -> list[dict]:
-    api_key = os.environ["LLM_API_KEY"]
+class ExtractionError(ValueError):
+    """The LLM answered, but not with usable cards."""
+
+
+def _llm_settings() -> tuple[str, str, str]:
+    api_key = os.environ.get("LLM_API_KEY", "")
     base_url = os.environ.get("LLM_BASE_URL", "https://api.openai.com/v1").rstrip("/")
     model = os.environ.get("LLM_MODEL", "gpt-4o-mini")
+    return api_key, base_url, model
+
+
+def _call_llm(prompt: str) -> str:
+    api_key, base_url, model = _llm_settings()
     body = {
         "model": model,
         "messages": [
             {"role": "system", "content": "You output strict JSON only."},
-            {"role": "user", "content": _LLM_PROMPT.format(title=title, text=text)},
+            {"role": "user", "content": prompt},
         ],
         "temperature": 0.2,
     }
     req = urllib.request.Request(base_url + "/chat/completions", data=json.dumps(body).encode(), method="POST")
     req.add_header("Authorization", f"Bearer {api_key}")
     req.add_header("Content-Type", "application/json")
-    with urllib.request.urlopen(req, timeout=120) as resp:
-        payload = json.loads(resp.read().decode())
-    content = payload["choices"][0]["message"]["content"].strip()
-    if content.startswith("```"):
-        content = content.strip("`")
-        content = content[content.index("["):]
-    cards = json.loads(content)
-    return [_normalize(card, title) for card in cards]
+    req.add_header("User-Agent", USER_AGENT)
+    try:
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            payload = json.loads(resp.read().decode())
+    except urllib.error.HTTPError as e:
+        detail = e.read().decode(errors="replace")[:300]
+        raise ExtractionError(f"LLM endpoint HTTP {e.code}: {detail}") from e
+    except urllib.error.URLError as e:
+        raise ExtractionError(f"LLM endpoint unreachable: {e.reason}") from e
+    try:
+        content = payload["choices"][0]["message"]["content"]
+    except (KeyError, IndexError, TypeError) as e:
+        raise ExtractionError(f"LLM response has no choices[0].message.content: {str(payload)[:200]}") from e
+    if not isinstance(content, str) or not content.strip():
+        raise ExtractionError("LLM returned empty content")
+    return content
+
+
+def parse_llm_cards(content: str, title: str) -> list[dict]:
+    """Turn raw LLM output into validated, de-duplicated TRSS cards.
+
+    Tolerates markdown fences, prose around the JSON, and an object wrapper
+    ({"cards": [...]}). Drops elements that are not objects or lack a term
+    or explanation. Raises ExtractionError when nothing usable remains, so
+    the caller can fall back to the offline path.
+    """
+    text = content.strip()
+    data = None
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError:
+        for open_ch, close_ch in (("[", "]"), ("{", "}")):
+            i, j = text.find(open_ch), text.rfind(close_ch)
+            if i != -1 and j > i:
+                try:
+                    data = json.loads(text[i:j + 1])
+                    break
+                except json.JSONDecodeError:
+                    continue
+    if data is None:
+        raise ExtractionError("LLM output is not parseable JSON")
+    if isinstance(data, dict):
+        data = data.get("cards") if isinstance(data.get("cards"), list) else [data]
+    if not isinstance(data, list):
+        raise ExtractionError("LLM JSON is not a list of cards")
+    cards: list[dict] = []
+    seen: set[str] = set()
+    for raw in data:
+        if not isinstance(raw, dict):
+            continue
+        card = _normalize(raw, title)
+        if card is None or card["term"].lower() in seen:
+            continue
+        seen.add(card["term"].lower())
+        cards.append(card)
+    if not cards:
+        raise ExtractionError("LLM JSON contained no valid cards")
+    return _unique_ids(cards)
+
+
+def extract_cards_llm(text: str, title: str) -> list[dict]:
+    if not _llm_settings()[0]:
+        raise ExtractionError("LLM_API_KEY is not set")
+    return parse_llm_cards(_call_llm(_LLM_PROMPT.format(title=title, text=text)), title)
 
 
 # --------------------------------------------------------------------------
@@ -123,7 +192,10 @@ def _display_term(term: str) -> str:
     )
 
 
-_NOT_TERMS = {"your", "our", "my", "his", "her", "their", "this", "that", "these", "those", "it"}
+_NOT_TERMS = {
+    "your", "our", "my", "his", "her", "their", "this", "that", "these", "those", "it",
+    "today", "there", "here", "what", "which", "everything", "something", "nothing", "everyone",
+}
 _LOGISTICS = re.compile(
     r"\b(january|february|march|april|may|june|july|august|september|october|november|december"
     r"|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b",
@@ -170,23 +242,57 @@ def extract_cards_offline(text: str, title: str) -> list[dict]:
         cards.append(card)
         by_term[term.lower()] = card
         last_card = card
+    return _unique_ids(cards)
+
+
+def _str(value) -> str:
+    return value.strip() if isinstance(value, str) else ""
+
+
+def _normalize(card: dict, title: str) -> dict | None:
+    """Coerce one LLM card into the schema; None if it has no term or
+    explanation (a card without either cannot be studied)."""
+    term = _str(card.get("term"))
+    simple = _str(card.get("simple"))
+    if not term or not simple:
+        return None
+    examples = card.get("examples")
+    if isinstance(examples, str):
+        examples = [examples]
+    examples = [e.strip() for e in (examples or []) if isinstance(e, str) and e.strip()] if isinstance(examples, list) else []
+    return {
+        "id": slugify(_str(card.get("id")) or term) or "card",
+        "term": term,
+        "type": _str(card.get("type")) or "concept",
+        "category": _str(card.get("category")) or _category_from_title(title),
+        "cue": _str(card.get("cue")) or f"What is {term}?",
+        "simple": simple,
+        "examples": examples,
+        "apply": _str(card.get("apply")) or f"Explain how {term} would show up in a real situation, in your own words.",
+    }
+
+
+def _unique_ids(cards: list[dict]) -> list[dict]:
+    seen: dict[str, int] = {}
+    for card in cards:
+        base = card["id"]
+        if base in seen:
+            seen[base] += 1
+            card["id"] = f"{base}-{seen[base]}"
+        else:
+            seen[base] = 1
     return cards
 
 
-def _normalize(card: dict, title: str) -> dict:
-    out = {field: card.get(field) for field in SCHEMA_FIELDS}
-    out["id"] = out["id"] or slugify(out["term"] or "card")
-    out["type"] = out["type"] or "concept"
-    out["category"] = out["category"] or _category_from_title(title)
-    out["examples"] = out["examples"] or []
-    return out
-
-
 def extract_cards(text: str, title: str) -> tuple[list[dict], str]:
-    """Returns (cards, path_used) where path_used is 'llm' or 'offline'."""
+    """Returns (cards, path_used). path_used is 'llm', 'offline', or
+    'offline (llm failed: <reason>)' so a silent quality drop is visible."""
+    if not text or not text.strip():
+        return [], "offline (empty transcript)"
     if os.environ.get("LLM_API_KEY"):
         try:
             return extract_cards_llm(text, title), "llm"
-        except Exception:
-            pass  # fall through to the offline path rather than fail the run
+        except (ExtractionError, OSError, ValueError) as e:
+            print(f"[extract] LLM path failed, using offline extractor: {e}", file=sys.stderr)
+            return extract_cards_offline(text, title), f"offline (llm failed: {' '.join(str(e).split())[:120]})"
     return extract_cards_offline(text, title), "offline"
