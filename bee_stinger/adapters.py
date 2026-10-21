@@ -13,6 +13,12 @@ Destinations:
 - TruCalenZer, through the two ingress paths its own code accepts. The
   adapter is a client only; TruCalenZer is not modified or included here.
 
+In the pipeline the Bee, .ics and import-file writers are fed from the
+staged Bee to-do list (staging.py: deliver_staged / send), so Bee and
+TruCalenZer always carry the same items. Study blocks (kind "study") are
+timed: a Bee alarm at the block's start, a timed .ics event (weekly
+series as one RRULE event), and the time window in the import notes.
+
 TruCalenZer contract (read from TruCalenZer source, origin/main ba1a741,
 2026-10-21). TruCalenZer deliberately has NO inbound network listener
 ("No public listening port in the production desktop build"), so there is
@@ -76,6 +82,11 @@ def commitment_key(item: dict, conversation_id=None) -> str:
     return hashlib.sha1(raw.encode("utf-8")).hexdigest()[:16]
 
 
+def _hhmm(text: str) -> time:
+    hours, minutes = text.split(":")
+    return time(int(hours), int(minutes))
+
+
 def _local_to_utc_iso(day: str, at: time, tz: tzinfo) -> str:
     local = datetime.combine(date.fromisoformat(day), at, tzinfo=tz)
     return local.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -92,21 +103,33 @@ class BeeTodoAdapter:
         self.alarm_time = alarm_time
 
     def payload(self, item: dict) -> dict:
-        # Alarm at 08:00 in the lecture's own timezone, sent as UTC.
+        # Spoken commitments: alarm at 08:00 in the lecture's own timezone.
+        # Study blocks: alarm when the block starts. Both sent as UTC.
+        if item.get("start"):
+            start = _hhmm(item["start"])
+            end = (datetime.combine(date.fromisoformat(item["date"]), start)
+                   + timedelta(minutes=item["duration_minutes"])).strftime("%H:%M")
+            return {
+                "text": f"{item['title']} — {item['date']} {item['start']}–{end}",
+                "alarm_at": _local_to_utc_iso(item["date"], start, self.tz),
+            }
         return {
             "text": f"{item['title']} — {item['date']}",
             "alarm_at": _local_to_utc_iso(item["date"], self.alarm_time, self.tz),
         }
 
     def deliver(self, item: dict) -> dict:
-        payload = self.payload(item)
+        return self.send(self.payload(item))
+
+    def send(self, payload: dict) -> dict:
+        """Deliver one prepared {text[, alarm_at]} payload (a staged to-do)."""
         if self.dry_run:
             print(f"[dry-run:{self.name}] POST /v1/todos {json.dumps(payload, ensure_ascii=False)}")
             return {"adapter": self.name, "dry_run": True, "payload": payload}
         if self.client is None:
             return {"adapter": self.name, "dry_run": False, "skipped": "BEE_TOKEN not set"}
         try:
-            result = self.client.create_todo(payload["text"], payload["alarm_at"])
+            result = self.client.create_todo(payload["text"], payload.get("alarm_at"))
         except BeeError as e:
             return {"adapter": self.name, "dry_run": False, "error": str(e)}
         return {"adapter": self.name, "dry_run": False, "result": result}
@@ -149,17 +172,57 @@ class IcsAdapter:
                 "BEGIN:VEVENT",
                 f"UID:bee-stinger-{commitment_key(item, self.conversation_id)}@trujoedigital",
                 f"DTSTAMP:{stamp}",
-                f"DTSTART;VALUE=DATE:{start.strftime('%Y%m%d')}",
-                f"DTEND;VALUE=DATE:{(start + timedelta(days=1)).strftime('%Y%m%d')}",
+            ]
+            if item.get("start"):
+                # Generated study block: a timed event in floating local time
+                # (5 pm wherever the student is, across DST changes).
+                at = _hhmm(item["start"]).strftime("%H%M%S")
+                lines += [
+                    f"DTSTART:{start.strftime('%Y%m%d')}T{at}",
+                    f"DURATION:PT{int(item['duration_minutes'])}M",
+                ]
+                rec = item.get("recurrence")
+                if rec and rec.get("freq") == "weekly":
+                    until = date.fromisoformat(rec["until"]).strftime("%Y%m%d")
+                    lines.append(f"RRULE:FREQ=WEEKLY;INTERVAL={int(rec.get('interval', 1))};UNTIL={until}T{at}")
+                    if rec.get("exdates"):
+                        lines.append("EXDATE:" + ",".join(
+                            f"{date.fromisoformat(d).strftime('%Y%m%d')}T{at}" for d in rec["exdates"]))
+                description = item.get("notes") or "Generated study block (Bee Stinger)."
+            else:
+                lines += [
+                    f"DTSTART;VALUE=DATE:{start.strftime('%Y%m%d')}",
+                    f"DTEND;VALUE=DATE:{(start + timedelta(days=1)).strftime('%Y%m%d')}",
+                ]
+                description = f"Heard in a Bee lecture capture (date not officially confirmed). \"{item['quote']}\""
+            lines += [
                 f"SUMMARY:{_ics_escape(item['title'])}",
-                "DESCRIPTION:" + _ics_escape(
-                    f"Heard in a Bee lecture capture (date not officially confirmed). \"{item['quote']}\""
-                ),
+                "DESCRIPTION:" + _ics_escape(description),
                 "END:VEVENT",
             ]
         lines.append("END:VCALENDAR")
         folded = [part for line in lines for part in _ics_fold(line)]
         return "\r\n".join(folded) + "\r\n"
+
+    @staticmethod
+    def items_from_staged(staged: list[dict]) -> list[dict]:
+        """Calendar items for the staged to-dos TruCalenZer receives: one
+        per staged to-do, except that the sessions of a weekly study series
+        fold back into their one recurring event."""
+        items, seen = [], set()
+        for todo in staged:
+            if not todo.get("to_trucalenzer"):
+                continue
+            if todo.get("series_id"):
+                if todo["series_id"] not in seen:
+                    seen.add(todo["series_id"])
+                    items.append(todo["series"])
+                continue
+            items.append(todo["item"])
+        return items
+
+    def deliver_staged(self, staged: list[dict]) -> str:
+        return self.deliver_all(self.items_from_staged(staged))
 
     def deliver_all(self, items: list[dict]) -> str:
         with open(self.path, "w", encoding="utf-8", newline="") as f:
@@ -187,16 +250,30 @@ class TruCalenZerImportFile:
             "course": self.course or "",
             "possible date": item["date"],
             "source id": f"bee-stinger-{commitment_key(item, self.conversation_id)}",
-            "notes": f"From a Bee lecture capture ({item['kind']}). Heard: \"{item['quote']}\"",
+            "notes": self._notes(item),
         }
         if self.student_name:
             record["student name"] = self.student_name
         return record
 
+    @staticmethod
+    def _notes(item: dict) -> str:
+        if item.get("kind") == "study":
+            # TruCalenZer's import has no time or duration fields, so the
+            # block's wall-clock window travels in the notes.
+            return (f"Study block {item['start']}, {item['duration_minutes']} min. "
+                    f"{item.get('notes') or 'Generated by Bee Stinger.'}")
+        return f"From a Bee lecture capture ({item['kind']}). Heard: \"{item['quote']}\""
+
     def deliver_all(self, items: list[dict]) -> str:
         with open(self.path, "w", encoding="utf-8") as f:
             json.dump({"assignments": [self.record(i) for i in items]}, f, indent=2, ensure_ascii=False)
         return self.path
+
+    def deliver_staged(self, staged: list[dict]) -> str:
+        """One import record per staged to-do TruCalenZer receives, in
+        staged order (each weekly study session is its own dated task)."""
+        return self.deliver_all([t["item"] for t in staged if t.get("to_trucalenzer")])
 
 
 class TruCalenZerOutlookAdapter:

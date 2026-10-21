@@ -249,6 +249,14 @@ def _str(value) -> str:
     return value.strip() if isinstance(value, str) else ""
 
 
+def _first_str(value) -> str:
+    """A string, or the first non-blank string of a list (TRSS data
+    carries apply as string[]; providers return either shape)."""
+    if isinstance(value, list):
+        return next((v.strip() for v in value if isinstance(v, str) and v.strip()), "")
+    return _str(value)
+
+
 def _normalize(card: dict, title: str) -> dict | None:
     """Coerce one LLM card into the schema; None if it has no term or
     explanation (a card without either cannot be studied)."""
@@ -268,7 +276,7 @@ def _normalize(card: dict, title: str) -> dict | None:
         "cue": _str(card.get("cue")) or f"What is {term}?",
         "simple": simple,
         "examples": examples,
-        "apply": _str(card.get("apply")) or f"Explain how {term} would show up in a real situation, in your own words.",
+        "apply": _first_str(card.get("apply")) or f"Explain how {term} would show up in a real situation, in your own words.",
     }
 
 
