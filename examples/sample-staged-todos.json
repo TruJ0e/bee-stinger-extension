@@ -1,0 +1,89 @@
+{
+  "subject": {
+    "name": "ECON 101: Supply and Demand",
+    "course": "ECON 101",
+    "topic": "Supply and Demand",
+    "slug": "econ-101-supply-and-demand",
+    "source": "title"
+  },
+  "bee_delivery": "dry-run",
+  "order": "staged first; TruCalenZer import + .ics are generated from the to_trucalenzer items below",
+  "todos": [
+    {
+      "position": 1,
+      "id": "bee-stinger-64f022bb68619d42",
+      "kind": "guide-ready",
+      "title": "Your study guide for ECON 101: Supply and Demand is ready",
+      "date": null,
+      "bee_payload": {
+        "text": "Your study guide for ECON 101: Supply and Demand is ready"
+      },
+      "to_trucalenzer": false
+    },
+    {
+      "position": 2,
+      "id": "bee-stinger-1d6af1fe6606347a",
+      "kind": "study",
+      "title": "Study: ECON 101: Supply and Demand",
+      "date": "2026-10-22",
+      "bee_payload": {
+        "text": "Study: ECON 101: Supply and Demand — 2026-10-22 17:00–18:00",
+        "alarm_at": "2026-10-22T22:00:00Z"
+      },
+      "to_trucalenzer": true,
+      "start": "17:00",
+      "duration_minutes": 60,
+      "series_id": "bee-stinger-1d6af1fe6606347a"
+    },
+    {
+      "position": 3,
+      "id": "bee-stinger-fadcc2017cc53191",
+      "kind": "due",
+      "title": "Problem Set 3 due",
+      "date": "2026-10-23",
+      "bee_payload": {
+        "text": "Problem Set 3 due — 2026-10-23",
+        "alarm_at": "2026-10-23T13:00:00Z"
+      },
+      "to_trucalenzer": true
+    },
+    {
+      "position": 4,
+      "id": "bee-stinger-32bce1a93f5304f2",
+      "kind": "reading",
+      "title": "Read Chapter 4",
+      "date": "2026-10-26",
+      "bee_payload": {
+        "text": "Read Chapter 4 — 2026-10-26",
+        "alarm_at": "2026-10-26T13:00:00Z"
+      },
+      "to_trucalenzer": true
+    },
+    {
+      "position": 5,
+      "id": "bee-stinger-e8b12c0ee0389ddc",
+      "kind": "study",
+      "title": "Final review: ECON 101: Supply and Demand (First Exam)",
+      "date": "2026-10-28",
+      "bee_payload": {
+        "text": "Final review: ECON 101: Supply and Demand (First Exam) — 2026-10-28 17:00–18:00",
+        "alarm_at": "2026-10-28T22:00:00Z"
+      },
+      "to_trucalenzer": true,
+      "start": "17:00",
+      "duration_minutes": 60
+    },
+    {
+      "position": 6,
+      "id": "bee-stinger-79b7e91c141f1d5d",
+      "kind": "exam",
+      "title": "First Exam",
+      "date": "2026-10-29",
+      "bee_payload": {
+        "text": "First Exam — 2026-10-29",
+        "alarm_at": "2026-10-29T13:00:00Z"
+      },
+      "to_trucalenzer": true
+    }
+  ]
+}

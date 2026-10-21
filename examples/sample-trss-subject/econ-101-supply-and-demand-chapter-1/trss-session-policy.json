@@ -1,0 +1,39 @@
+{
+  "pack": "econ-101-supply-and-demand-chapter-1",
+  "chapter": 1,
+  "subject": "econ-101-supply-and-demand",
+  "title": "ECON 101: Supply and Demand",
+  "version": "1.0.0",
+  "generatedAt": "2026-10-21T14:02:00-05:00",
+  "generator": "bee-stinger",
+  "modes": [
+    "reference",
+    "flashcards",
+    "quiz"
+  ],
+  "quiz": {
+    "questionsPerCard": 3,
+    "levels": [
+      "L1 core meaning",
+      "L2 lesson scenario",
+      "L3 application scenario"
+    ],
+    "optionsPerQuestion": 4,
+    "distractorStrategy": "prefer-same-category",
+    "shuffleOptions": true
+  },
+  "flashcards": {
+    "flipOn": [
+      "tap",
+      "space"
+    ],
+    "shuffle": true
+  },
+  "counts": {
+    "book-term": 0,
+    "lesson-concept": 7,
+    "research-skill": 0,
+    "total": 7,
+    "questions": 21
+  }
+}

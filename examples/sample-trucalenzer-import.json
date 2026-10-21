@@ -1,22 +1,36 @@
 {
   "assignments": [
     {
+      "title": "Study: ECON 101: Supply and Demand",
+      "course": "ECON 101",
+      "possible date": "2026-10-22",
+      "source id": "bee-stinger-1d6af1fe6606347a",
+      "notes": "Study block 17:00, 60 min. Generated weekly study session, every Thursday 17:00, until First Exam on 2026-10-29."
+    },
+    {
       "title": "Problem Set 3 due",
-      "course": "ECON 101 — Supply and Demand",
+      "course": "ECON 101",
       "possible date": "2026-10-23",
       "source id": "bee-stinger-fadcc2017cc53191",
       "notes": "From a Bee lecture capture (due). Heard: \"Problem set 3 is due Friday at the start of class.\""
     },
     {
       "title": "Read Chapter 4",
-      "course": "ECON 101 — Supply and Demand",
+      "course": "ECON 101",
       "possible date": "2026-10-26",
       "source id": "bee-stinger-32bce1a93f5304f2",
       "notes": "From a Bee lecture capture (reading). Heard: \"And read chapter 4 before Monday's class, because we start market failures then.\""
     },
     {
+      "title": "Final review: ECON 101: Supply and Demand (First Exam)",
+      "course": "ECON 101",
+      "possible date": "2026-10-28",
+      "source id": "bee-stinger-e8b12c0ee0389ddc",
+      "notes": "Study block 17:00, 60 min. Generated final review the day before First Exam on 2026-10-29."
+    },
+    {
       "title": "First Exam",
-      "course": "ECON 101 — Supply and Demand",
+      "course": "ECON 101",
       "possible date": "2026-10-29",
       "source id": "bee-stinger-79b7e91c141f1d5d",
       "notes": "From a Bee lecture capture (exam). Heard: \"Your first exam is on Thursday, October 29, and it covers everything through elasticity.\""

@@ -1,0 +1,48 @@
+[
+  {
+    "title": "Problem Set 3 due",
+    "date": "2026-10-23",
+    "kind": "due",
+    "quote": "Problem set 3 is due Friday at the start of class."
+  },
+  {
+    "title": "Read Chapter 4",
+    "date": "2026-10-26",
+    "kind": "reading",
+    "quote": "And read chapter 4 before Monday's class, because we start market failures then."
+  },
+  {
+    "title": "First Exam",
+    "date": "2026-10-29",
+    "kind": "exam",
+    "quote": "Your first exam is on Thursday, October 29, and it covers everything through elasticity."
+  },
+  {
+    "title": "Study: ECON 101: Supply and Demand",
+    "date": "2026-10-22",
+    "kind": "study",
+    "start": "17:00",
+    "duration_minutes": 60,
+    "quote": null,
+    "notes": "Generated weekly study session, every Thursday 17:00, until First Exam on 2026-10-29.",
+    "recurrence": {
+      "freq": "weekly",
+      "interval": 1,
+      "count": 1,
+      "until": "2026-10-22",
+      "dates": [
+        "2026-10-22"
+      ],
+      "exdates": []
+    }
+  },
+  {
+    "title": "Final review: ECON 101: Supply and Demand (First Exam)",
+    "date": "2026-10-28",
+    "kind": "study",
+    "start": "17:00",
+    "duration_minutes": 60,
+    "quote": null,
+    "notes": "Generated final review the day before First Exam on 2026-10-29."
+  }
+]

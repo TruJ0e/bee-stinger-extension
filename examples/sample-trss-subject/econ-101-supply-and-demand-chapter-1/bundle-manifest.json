@@ -1,0 +1,47 @@
+{
+  "bundle": "econ-101-supply-and-demand-chapter-1",
+  "subject": {
+    "name": "ECON 101: Supply and Demand",
+    "course": "ECON 101",
+    "topic": "Supply and Demand",
+    "slug": "econ-101-supply-and-demand",
+    "source": "title"
+  },
+  "unit": {
+    "num": 1,
+    "prefix": "CH1",
+    "course": "econ-101-supply-and-demand",
+    "title": "ECON 101: Supply and Demand"
+  },
+  "counts": {
+    "cards": 7,
+    "questions": 21,
+    "sections": 1,
+    "targets": 8
+  },
+  "files": [
+    "digital-reference/core-cards.js",
+    "digital-reference/extra-cards.js",
+    "digital-reference/generated-study-data.js",
+    "digital-reference/index.html",
+    "digital-reference/lesson-cards.js",
+    "digital-reference/lesson-targets.js",
+    "digital-reference/quiz-wiring.json",
+    "guide.html",
+    "trss-session-policy.json",
+    "bundle-manifest.json"
+  ],
+  "supplied_by_trss_at_install": {
+    "study.js": "python/trssgen/templates/study.js (byte-identical runtime, BASE-MODEL §9)",
+    "reference.css": "python/trssgen/templates/reference.css (byte-identical base CSS, BASE-MODEL §6)",
+    "index.html (study shell)": "python/trssgen/templates/index.html, then chapter-landing/apply-landing.py"
+  },
+  "install": [
+    "Copy study.js and reference.css from TRSS's python/trssgen/templates/ into digital-reference/.",
+    "Build the study page from TRSS's templates/index.html, keeping this bundle's window.TRSS_CHAPTER line and script order.",
+    "python3 chapter-landing/apply-landing.py <bundle>  (landing, routing, derived counts)",
+    "python3 chapter-landing/audit-chapter.py <bundle> --base-css <TRSS reference.css>  (must exit 0)",
+    "python3 chapter-landing/deploy-pack.py <bundle>/digital-reference <course>/chapter-<n>, then add the hub card."
+  ],
+  "generatedAt": "2026-10-21T14:02:00-05:00"
+}

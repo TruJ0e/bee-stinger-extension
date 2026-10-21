@@ -1,0 +1,178 @@
+{
+  "order": [
+    3,
+    2,
+    1
+  ],
+  "questionsPerCard": 3,
+  "questions": [
+    {
+      "level": 3,
+      "label": "Application Scenario",
+      "id": "ch1-lesson-001-apply",
+      "card_id": "ch1-lesson-001",
+      "prompt": "A classmate describes an idea this way: \"____ is the quantity of a good that buyers are willing and able to purchase at a given price.\" Which concept is it?",
+      "answer": "Demand"
+    },
+    {
+      "level": 3,
+      "label": "Application Scenario",
+      "id": "ch1-lesson-002-apply",
+      "card_id": "ch1-lesson-002",
+      "prompt": "A classmate describes an idea this way: \"The ____ is the principle that, all else equal, quantity demanded falls as price rises.\" Which concept is it?",
+      "answer": "Law of Demand"
+    },
+    {
+      "level": 3,
+      "label": "Application Scenario",
+      "id": "ch1-lesson-003-apply",
+      "card_id": "ch1-lesson-003",
+      "prompt": "A classmate describes an idea this way: \"____ is the quantity of a good that producers are willing to sell at a given price.\" Which concept is it?",
+      "answer": "Supply"
+    },
+    {
+      "level": 3,
+      "label": "Application Scenario",
+      "id": "ch1-lesson-004-apply",
+      "card_id": "ch1-lesson-004",
+      "prompt": "A classmate describes an idea this way: \"____ is the price at which the quantity buyers want exactly equals the quantity sellers offer.\" Which concept is it?",
+      "answer": "Equilibrium"
+    },
+    {
+      "level": 3,
+      "label": "Application Scenario",
+      "id": "ch1-lesson-005-apply",
+      "card_id": "ch1-lesson-005",
+      "prompt": "A classmate describes an idea this way: \"A ____ is the situation where quantity demanded exceeds quantity supplied at the current price.\" Which concept is it?",
+      "answer": "Shortage"
+    },
+    {
+      "level": 3,
+      "label": "Application Scenario",
+      "id": "ch1-lesson-006-apply",
+      "card_id": "ch1-lesson-006",
+      "prompt": "A classmate describes an idea this way: \"A ____ is the situation where quantity supplied exceeds quantity demanded at the current price.\" Which concept is it?",
+      "answer": "Surplus"
+    },
+    {
+      "level": 3,
+      "label": "Application Scenario",
+      "id": "ch1-lesson-007-apply",
+      "card_id": "ch1-lesson-007",
+      "prompt": "A classmate describes an idea this way: \"____ is a measure of how strongly quantity demanded or supplied responds to a change in price.\" Which concept is it?",
+      "answer": "Elasticity"
+    },
+    {
+      "level": 2,
+      "label": "Lesson Scenario",
+      "id": "ch1-lesson-001-lesson",
+      "card_id": "ch1-lesson-001",
+      "prompt": "In the Chapter 1 lesson: \"For example, when the price of coffee went from three dollars to five dollars at the campus cafe, daily sales dropped by almost half.\". Which concept is being described?",
+      "answer": "Demand"
+    },
+    {
+      "level": 2,
+      "label": "Lesson Scenario",
+      "id": "ch1-lesson-002-lesson",
+      "card_id": "ch1-lesson-002",
+      "prompt": "In the Chapter 1 lesson: \"From the lecture: The ____ is the principle that, all else equal, quantity demanded falls as price rises.\". Which concept is being described?",
+      "answer": "Law of Demand"
+    },
+    {
+      "level": 2,
+      "label": "Lesson Scenario",
+      "id": "ch1-lesson-003-lesson",
+      "card_id": "ch1-lesson-003",
+      "prompt": "In the Chapter 1 lesson: \"For example, when coffee prices rose, two new roasters entered the market because selling coffee became more profitable.\". Which concept is being described?",
+      "answer": "Supply"
+    },
+    {
+      "level": 2,
+      "label": "Lesson Scenario",
+      "id": "ch1-lesson-004-lesson",
+      "card_id": "ch1-lesson-004",
+      "prompt": "In the Chapter 1 lesson: \"From the lecture: ____ is the price at which the quantity buyers want exactly equals the quantity sellers offer.\". Which concept is being described?",
+      "answer": "Equilibrium"
+    },
+    {
+      "level": 2,
+      "label": "Lesson Scenario",
+      "id": "ch1-lesson-005-lesson",
+      "card_id": "ch1-lesson-005",
+      "prompt": "In the Chapter 1 lesson: \"For instance, during the shortage last spring, the bookstore ran out of calculators in the first week.\". Which concept is being described?",
+      "answer": "Shortage"
+    },
+    {
+      "level": 2,
+      "label": "Lesson Scenario",
+      "id": "ch1-lesson-006-lesson",
+      "card_id": "ch1-lesson-006",
+      "prompt": "In the Chapter 1 lesson: \"From the lecture: A ____ is the situation where quantity supplied exceeds quantity demanded at the current price.\". Which concept is being described?",
+      "answer": "Surplus"
+    },
+    {
+      "level": 2,
+      "label": "Lesson Scenario",
+      "id": "ch1-lesson-007-lesson",
+      "card_id": "ch1-lesson-007",
+      "prompt": "In the Chapter 1 lesson: \"For example, demand for insulin is nearly unchanging when its price rises, while demand for concert tickets falls quickly.\". Which concept is being described?",
+      "answer": "Elasticity"
+    },
+    {
+      "level": 1,
+      "label": "Core Meaning",
+      "id": "ch1-lesson-001-core",
+      "card_id": "ch1-lesson-001",
+      "prompt": "Which concept means: \"Demand is the quantity of a good that buyers are willing and able to purchase at a given price.\"?",
+      "answer": "Demand"
+    },
+    {
+      "level": 1,
+      "label": "Core Meaning",
+      "id": "ch1-lesson-002-core",
+      "card_id": "ch1-lesson-002",
+      "prompt": "Which concept means: \"The law of demand is the principle that, all else equal, quantity demanded falls as price rises.\"?",
+      "answer": "Law of Demand"
+    },
+    {
+      "level": 1,
+      "label": "Core Meaning",
+      "id": "ch1-lesson-003-core",
+      "card_id": "ch1-lesson-003",
+      "prompt": "Which concept means: \"Supply is the quantity of a good that producers are willing to sell at a given price.\"?",
+      "answer": "Supply"
+    },
+    {
+      "level": 1,
+      "label": "Core Meaning",
+      "id": "ch1-lesson-004-core",
+      "card_id": "ch1-lesson-004",
+      "prompt": "Which concept means: \"Equilibrium is the price at which the quantity buyers want exactly equals the quantity sellers offer.\"?",
+      "answer": "Equilibrium"
+    },
+    {
+      "level": 1,
+      "label": "Core Meaning",
+      "id": "ch1-lesson-005-core",
+      "card_id": "ch1-lesson-005",
+      "prompt": "Which concept means: \"A shortage is the situation where quantity demanded exceeds quantity supplied at the current price.\"?",
+      "answer": "Shortage"
+    },
+    {
+      "level": 1,
+      "label": "Core Meaning",
+      "id": "ch1-lesson-006-core",
+      "card_id": "ch1-lesson-006",
+      "prompt": "Which concept means: \"A surplus is the situation where quantity supplied exceeds quantity demanded at the current price.\"?",
+      "answer": "Surplus"
+    },
+    {
+      "level": 1,
+      "label": "Core Meaning",
+      "id": "ch1-lesson-007-core",
+      "card_id": "ch1-lesson-007",
+      "prompt": "Which concept means: \"Elasticity is a measure of how strongly quantity demanded or supplied responds to a change in price.\"?",
+      "answer": "Elasticity"
+    }
+  ]
+}
