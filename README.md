@@ -12,6 +12,33 @@ Bee Stinger closes that gap. It takes the transcript Bee already captured and do
 4. **Build the guide** — a true study guide: concepts explained, key terms defined, examples and applications — plus flashcards and a 3-level quiz generated from the same cards. Not a plan. The material itself.
 5. **Route commitments** — things said out loud in class ("the exam is next Thursday") are extracted and delivered to real destinations: Bee to-dos with alarms, calendar files, and TruCalenZer.
 
+## Run it
+
+Zero dependencies (Python 3.11+, stdlib only). The demo runs the full
+pipeline offline on a bundled fixture lecture — no Bee account, no keys:
+
+```bash
+python3 -m bee_stinger.cli demo          # writes guide/cards/quiz/commitments into ./output
+python3 tests/selftest.py                # 20 checks, all offline
+```
+
+A real capture, once you have a Bee developer token (Developer Mode on in
+the Bee app, token in the environment — see `.env.example`):
+
+```bash
+export BEE_TOKEN=...                      # never commit this
+python3 -m bee_stinger.cli fetch --conversation <id>
+```
+
+Set `LLM_API_KEY` (any OpenAI-compatible endpoint) to use the LLM
+extraction path; without it, a deterministic offline extractor runs
+instead. Delivery adapters are dry-run by default and print exactly what
+they would send; `--live` enables real sends.
+
+Design and boundaries: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) ·
+Build plan: [docs/ENTRY-PLAN.md](docs/ENTRY-PLAN.md) ·
+Tooling friction log: [docs/FRICTION-LOG.md](docs/FRICTION-LOG.md)
+
 ## Status
 
 Built during the **Amazon "Build, Ship, Shape" Developer Hackathon** (Bee track), October 2026. Design and build plan: [docs/ENTRY-PLAN.md](docs/ENTRY-PLAN.md).

@@ -1,0 +1,25 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Bee Stinger//EN
+BEGIN:VEVENT
+UID:bee-stinger-20261023-0@trujoedigital
+DTSTAMP:20261021T075505Z
+DTSTART;VALUE=DATE:20261023
+SUMMARY:Problem Set 3 due
+DESCRIPTION:From a Bee lecture capture. "Problem set 3 is due Friday at the start of class."
+END:VEVENT
+BEGIN:VEVENT
+UID:bee-stinger-20261026-1@trujoedigital
+DTSTAMP:20261021T075505Z
+DTSTART;VALUE=DATE:20261026
+SUMMARY:Read Chapter 4
+DESCRIPTION:From a Bee lecture capture. "And read chapter 4 before Monday's class, because we start market failures then."
+END:VEVENT
+BEGIN:VEVENT
+UID:bee-stinger-20261029-2@trujoedigital
+DTSTAMP:20261021T075505Z
+DTSTART;VALUE=DATE:20261029
+SUMMARY:First Exam
+DESCRIPTION:From a Bee lecture capture. "Your first exam is on Thursday, October 29, and it covers everything through elasticity."
+END:VEVENT
+END:VCALENDAR

@@ -1,0 +1,80 @@
+[
+  {
+    "id": "demand",
+    "term": "Demand",
+    "type": "concept",
+    "category": "Economics",
+    "cue": "What is Demand?",
+    "simple": "Demand is the quantity of a good that buyers are willing and able to purchase at a given price.",
+    "examples": [
+      "For example, when the price of coffee went from three dollars to five dollars at the campus cafe, daily sales dropped by almost half."
+    ],
+    "apply": "Explain how Demand would show up in a real situation, in your own words."
+  },
+  {
+    "id": "law-of-demand",
+    "term": "Law of Demand",
+    "type": "concept",
+    "category": "Economics",
+    "cue": "What is Law of Demand?",
+    "simple": "The law of demand is the principle that, all else equal, quantity demanded falls as price rises.",
+    "examples": [],
+    "apply": "Explain how Law of Demand would show up in a real situation, in your own words."
+  },
+  {
+    "id": "supply",
+    "term": "Supply",
+    "type": "concept",
+    "category": "Economics",
+    "cue": "What is Supply?",
+    "simple": "Supply is the quantity of a good that producers are willing to sell at a given price.",
+    "examples": [
+      "For example, when coffee prices rose, two new roasters entered the market because selling coffee became more profitable."
+    ],
+    "apply": "Explain how Supply would show up in a real situation, in your own words."
+  },
+  {
+    "id": "equilibrium",
+    "term": "Equilibrium",
+    "type": "concept",
+    "category": "Economics",
+    "cue": "What is Equilibrium?",
+    "simple": "Equilibrium is the price at which the quantity buyers want exactly equals the quantity sellers offer.",
+    "examples": [],
+    "apply": "Explain how Equilibrium would show up in a real situation, in your own words."
+  },
+  {
+    "id": "shortage",
+    "term": "Shortage",
+    "type": "concept",
+    "category": "Economics",
+    "cue": "What is Shortage?",
+    "simple": "A shortage is the situation where quantity demanded exceeds quantity supplied at the current price.",
+    "examples": [
+      "For instance, during the shortage last spring, the bookstore ran out of calculators in the first week."
+    ],
+    "apply": "Explain how Shortage would show up in a real situation, in your own words."
+  },
+  {
+    "id": "surplus",
+    "term": "Surplus",
+    "type": "concept",
+    "category": "Economics",
+    "cue": "What is Surplus?",
+    "simple": "A surplus is the situation where quantity supplied exceeds quantity demanded at the current price.",
+    "examples": [],
+    "apply": "Explain how Surplus would show up in a real situation, in your own words."
+  },
+  {
+    "id": "elasticity",
+    "term": "Elasticity",
+    "type": "concept",
+    "category": "Economics",
+    "cue": "What is Elasticity?",
+    "simple": "Elasticity is a measure of how strongly quantity demanded or supplied responds to a change in price.",
+    "examples": [
+      "For example, demand for insulin is nearly unchanging when its price rises, while demand for concert tickets falls quickly."
+    ],
+    "apply": "Explain how Elasticity would show up in a real situation, in your own words."
+  }
+]

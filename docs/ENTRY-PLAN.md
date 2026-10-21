@@ -149,3 +149,11 @@ Implementation rule that follows: the assistant sits behind one provider interfa
 ## Correction — 2026-10-20 21:54 CDT (Truman)
 
 TruCalenZer's **outside route already exists and is secure**. §2's commitment adapter is therefore a **client of that existing route** — Thursday's builder first documents the route's contract from the TruCalenZer side, then writes the adapter against it. No new plumbing inside TruCalenZer, and the §9 cut order is unaffected (fallbacks remain Bee to-dos / .ics if the route integration slips). The updater defect stands as the one known TruCalenZer issue (Windows Application Control allowlist on the desktop build machine; updater key backup completed 2026-10-20).
+
+---
+
+## Repo created — 2026-10-21 02:42 CDT (Truman's order)
+
+**`TruJ0e/bee-stinger-extension`** — created PUBLIC (verified: `private: false`, visibility public), main branch.
+Seeded with: `README.md` (concept, architecture, boundaries), `docs/ENTRY-PLAN.md` (this plan), `LICENSE` (MIT, extension layer only). HEAD after seeding: `ffc908c9d13d`.
+Repo name is Truman's: "Bee Stinger Extension." The §2 proposed name is superseded. Local seed copies live at `~/workspace/funding/amazon-bee/seed/`; the canonical plan remains this file — sync changes to the repo as the build proceeds.
