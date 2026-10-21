@@ -7,8 +7,8 @@ Contract source: https://docs.bee.computer/docs/api and /docs/realtime
 - POST /v1/todos body: {"text": ..., "alarm_at": "<ISO 8601>"}; responses
   return alarm_at as epoch milliseconds.
 - GET /v1/stream is SSE, optional ?types=new-utterance,todo-created,...
-- GET /v1/changes returns changed entity ids since a cursor; the CLI
-  (`bee changed --cursor`) reports the next cursor as meta.next_cursor.
+- GET /v1/changes returns changed entity ids since a cursor; the next
+  cursor comes back in the response (shape below, from the CLI).
 
 Not in the docs, taken from the official open-source Bee CLI
 (github.com/bee-computer/bee-cli @ 84a6e8f, 2026-10-13) — see
