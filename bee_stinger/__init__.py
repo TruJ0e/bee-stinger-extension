@@ -10,3 +10,7 @@ it. See docs/ARCHITECTURE.md.
 """
 
 __version__ = "0.1.0"
+
+# Explicit User-Agent for every outbound request: CDNs (e.g. Cloudflare
+# error 1010) reject urllib's default "Python-urllib/x.y" signature.
+USER_AGENT = f"bee-stinger/{__version__}"
