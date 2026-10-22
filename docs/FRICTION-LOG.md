@@ -114,3 +114,19 @@ who does not already know a free plan exists will reasonably conclude
 the app requires payment. Suggestion: put "Continue with Free" on the
 sheet itself, next to the paid plans — the free tier is a documented
 plan, not a dismissal gesture.
+
+## 2026-10-21 — Correction + second addendum: "Connect Bee Desktop" is a Pro upsell wearing a pairing costume
+
+Correction to the first-setup entry above: the pairing confusion has a
+sharper cause than we first wrote. The app's device-setup screen offers
+"Set up a Bee device", "Try with Apple Watch", "Connect Bee Desktop"
+(with a QR-scan icon), and "Get a Bee device". Tapping "Connect Bee
+Desktop" — the option a developer naturally reads as "pair my desktop
+tooling" — drops straight onto the Pro paywall, because it links the
+Bee desktop *app* (a Pro feature), not the developer CLI. The CLI's own
+pairing (`bee login --qr` from a terminal) is a separate flow that this
+menu never mentions. Two different features, one misleading label.
+Owner's verdict stands: nothing on the paywall sheet offers a non-paid
+choice. Suggestion: label the menu item for what it is ("Connect Bee
+Desktop app — Pro") and surface the Apple Watch and CLI paths with the
+same prominence as the purchase paths.
