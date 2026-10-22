@@ -67,8 +67,37 @@ feedback; this log is written to be submittable as-is.)
 - **Suggestion:** Publish an OpenAPI document (or at least one example
   response per endpoint) next to the reference list.
 
-## 2026-10-21 — (placeholder, to complete at first live setup)
+## 2026-10-21 — First-account setup: no sign-in page exists, and the pairing scan reads as an error
 
-First-account Developer Mode + token flow: time it, note any step where
-the app and the docs disagree, and record whether a Bee Pro subscription
-is required for API access or only for capture features.
+- **Task:** First-time Bee setup for this project (developer account,
+  Developer Mode, CLI token), performed by the project owner on his own
+  phone and desktop.
+- **Steps:** Opened docs.bee.computer looking for a developer sign-in /
+  token page; installed the Bee iOS app; opened the desktop repo page.
+- **Expected:** A web sign-in where a developer enables Developer Mode
+  and copies a token (the flow most developer platforms use, and the one
+  we planned around).
+- **Actual:** There is no desktop sign-in page — the docs site leads to
+  the CLI repo and to hardware purchase pages. The real flow is:
+  (1) in the iOS app, unlock Developer Mode by tapping the app
+  **Version 5 times**; (2) run `bee login` / `bee login --qr` on the
+  desktop, which prints an auth link/QR; (3) approve the pairing in the
+  phone app by scanning. The owner's firsthand report on hitting the
+  scan prompt cold: "the app asks to scan desktop app so something is
+  wrong" — the pairing step presents as an error state when you arrive
+  at it without the desktop half running. Onboarding also surfaces the
+  Bee Pro paywall ($11.99/mo) before the free plan is obvious; the free
+  plan (conversation processing, summaries, 14 days of history) exists,
+  and the CLI docs list no Pro prerequisite for Developer Mode — only
+  the app plus the 5-tap unlock.
+- **Severity:** Medium — the actual flow is sound and arguably more
+  secure (the token is minted by the phone approving a pairing, per
+  Amazon's Bee Private Compute design), but a first-time developer can
+  burn an evening discovering it, and the paywall ordering makes the
+  free path look unavailable when it is not.
+- **Workaround:** Follow the CLI-first order: app → tap Version 5x →
+  `bee login --qr` on desktop → scan/approve in the app → `bee status`.
+- **Suggestion:** Put the 5-tap unlock and the QR pairing on the docs'
+  front page as the stated authentication flow (today the unlock is a
+  prerequisite line inside the CLI guide), and show the free plan's
+  scope next to the Pro paywall during app onboarding.
