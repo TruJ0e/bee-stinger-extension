@@ -101,3 +101,16 @@ feedback; this log is written to be submittable as-is.)
   front page as the stated authentication flow (today the unlock is a
   prerequisite line inside the CLI guide), and show the free plan's
   scope next to the Pro paywall during app onboarding.
+
+## 2026-10-21 — Addendum: the Pro sheet has no free option on it at all
+
+Screen captured during the same setup (owner's phone, 20:41 CDT): the
+Bee Pro paywall sheet offers exactly two choices — Monthly $11.99 or
+Yearly $99.00 — above a single "Subscribe now" button. There is no
+free-plan option, no "continue free," no "skip" label anywhere on the
+sheet. The owner's report: "I can't choose anything that isn't
+paying." The only exit is an unlabeled X in the top-left corner. A user
+who does not already know a free plan exists will reasonably conclude
+the app requires payment. Suggestion: put "Continue with Free" on the
+sheet itself, next to the paid plans — the free tier is a documented
+plan, not a dismissal gesture.
