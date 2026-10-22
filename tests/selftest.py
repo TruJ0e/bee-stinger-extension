@@ -330,6 +330,8 @@ def bee_client_checks() -> None:
           [e["event"] for e in events] == ["new-utterance", "todo", "connected", "message"], str(events))
     check("SSE: JSON data parsed", events[0]["data"]["utterance"]["text"] == "hi")
     check("SSE: multi-line data joined", events[3]["data"] == "line1\nline2")
+    check("SSE: unterminated frame at disconnect is not emitted",
+          list(parse_sse(["event: new-utterance\n", 'data: {"utterance":'])) == [])
     check("SSE: event inference by payload keys",
           infer_event_type({"conversation_id": 1, "short_summary": "s"}) == "update-conversation-summary"
           and infer_event_type({"journalId": 5, "text": "t"}) == "journal-text")

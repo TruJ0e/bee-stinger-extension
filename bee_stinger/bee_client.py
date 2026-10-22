@@ -92,8 +92,10 @@ def parse_sse(lines: Iterable[bytes | str]) -> Iterator[dict]:
 
     Follows the SSE framing rules: CRLF/LF line endings, ':' comment lines,
     one optional space after the field colon, multi-line data joined with
-    '\\n', dispatch on a blank line. When the server sends no `event:` line
-    the name falls back to infer_event_type(), then to "message".
+    '\\n', dispatch on a blank line. An unterminated frame at EOF is dropped:
+    a disconnect can cut a JSON payload mid-byte, and only a blank line proves
+    that Bee finished the event. When the server sends no `event:` line the
+    name falls back to infer_event_type(), then to "message".
     """
     event_name: str | None = None
     data_lines: list[str] = []
@@ -123,8 +125,6 @@ def parse_sse(lines: Iterable[bytes | str]) -> Iterator[dict]:
             event_name = value.strip() or None
         elif field == "data":
             data_lines.append(value)
-    if data_lines:
-        yield dispatch()
 
 
 class BeeClient:
